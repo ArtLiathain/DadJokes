@@ -1,27 +1,43 @@
-const { createServer } = require('node:http');
-const { URL } = require('url');
-const querystring = require('querystring');
-const crypto = require('crypto');
+const { createServer } = require("node:http");
+const { URL } = require("url");
+const querystring = require("querystring");
+const crypto = require("crypto");
+var mysql = require("mysql");
+const express = require("express");
 
-const hostname = 'localhost';
+
+
+const hostname = "localhost";
 const port = 9022;
 
-const server = createServer((req, res) => {
-  // Parse the URL
-  const parsedUrl = new URL(`http://${req.headers.host}${req.url}`);
-  // Extract the query parameters
-  const queryParams = querystring.parse(parsedUrl.searchParams.toString());
-  // Send a response with the extracted parameters
-  res.writeHead(200, {'Content-Type': 'text/plain'});
-  
-  // Hash the password using SHA-1
-  if (queryParams.pass) {
-    queryParams.pass = crypto.createHash('sha1').update(queryParams.pass).digest('hex');
-  }
-  
-  res.end(`Parameters: ${JSON.stringify(queryParams)}`);
+var con = mysql.createConnection({
+  host: "localhost",
+  user: "root",
+  password: "art123",
+  database: "Dadjokes",
 });
 
-server.listen(port, hostname, () => {
-  console.log(`Server running at http://${hostname}:${port}/`);
+con.connect(function (err) {
+  if (err) throw err;
+  console.log("Connected!");
+});
+
+const app = express ();
+app.use(express.json());
+
+app.post('/addUser', function(req, res) {
+  let pepper = "NoDictionaryTablesForYou"
+  var sql =
+  `INSERT INTO users VALUES ("${req.body.publickey}", "${req.body.user}", "${req.body.pass}","${req.body.salt}" ,"${pepper}")`;
+  con.query(sql, function (err, result) {
+    if (err) throw err;
+    console.log("1 record inserted");
+  });  
+  res.send(req.body);
+});
+
+
+
+app.listen(port, () => {
+  console.log("Server Listening on PORT:", port);
 });
