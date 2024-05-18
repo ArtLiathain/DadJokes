@@ -2,6 +2,8 @@ const { createServer } = require('node:http');
 const { URL } = require('url');
 const querystring = require('querystring');
 const crypto = require('crypto');
+const level = require('level');
+const { Level } = level;
 
 const hostname = 'localhost';
 const port = 9022;
@@ -18,6 +20,8 @@ const server = createServer((req, res) => {
   if (queryParams.pass) {
     queryParams.pass = crypto.createHash('sha1').update(queryParams.pass).digest('hex');
   }
+
+  storeKeysIndexDB();
   
   res.end(`Parameters: ${JSON.stringify(queryParams)}`);
 });
@@ -25,3 +29,37 @@ const server = createServer((req, res) => {
 server.listen(port, hostname, () => {
   console.log(`Server running at http://${hostname}:${port}/`);
 });
+
+
+async function storeKeysIndexDB() {
+  var publicKey = 678;
+  var privateKey = 123;
+  var db;
+
+  try {
+  db = new Level('example', { valueEncoding: 'json' });
+    
+  await db.open();
+  console.log('Opened LevelDB');
+
+  await db.put('Public Key', publicKey);
+  await db.put('Private Key', privateKey);
+  console.log("Successfully put Keys");
+
+  var getPublicKey = await db.get('Public Key');
+  var getPrivateKey = await db.get('Private Key');
+
+  console.log("Public key Value", getPublicKey);
+  console.log("Private key Value", getPrivateKey);
+  }
+  catch (error) {
+    console.log(error);
+  } 
+  finally {
+    if (db) {
+      await db.close();
+      console.log('Closed LevelDB');
+    }
+  }
+
+}
