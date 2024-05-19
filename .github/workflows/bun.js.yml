@@ -20,7 +20,8 @@ jobs:
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
-          
+      - name: Get Dependencies
+        run: bun i
       - name: Run Lint
         run: bun lint
 
