@@ -1,3 +1,7 @@
+const keyGen = require('./keyGen.js');
+const level = require('level');
+const { Level } = level;
+
 import mysql from "mysql";
 import express from "express";
 import multer from "multer";
@@ -17,6 +21,8 @@ var con = mysql.createConnection({
   password: "art123",
   database: "Dadjokes",
 });
+
+// keyStoreLevelDB();
 
 con.connect(function (err) {
   if (err) throw err;
@@ -67,6 +73,7 @@ app.post("/addFile", upload.single("file"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }
+
   let sql = `INSERT INTO fileStorage VALUES ("${req.file.filename}","${req.body.topublickey}","${req.body.frompublickey}");`;
   con.query(sql, (err, result) => {
     if (err) {
@@ -117,3 +124,37 @@ app.get("/downloadFile/:filename", (req, res) => {
 app.listen(port, () => {
   console.log("Server Listening on PORT:", port);
 });
+
+
+async function keyStoreLevelDB() {
+  var publicKey = keyGen.createPublicKey();
+  var privateKey = keyGen.createPrivateKey();
+  var db;
+
+  try {
+    db = new Level('example', { valueEncoding: 'json' });
+      
+    await db.open();
+    console.log('Opened LevelDB');
+
+    await db.put('Username Public', publicKey);
+    await db.put('Username Private', privateKey);
+    console.log("Successfully put Keys");
+
+    var getPublicKey = await db.get('Username Public');
+    var getPrivateKey = await db.get('Username Private');
+
+    console.log("Public key Value", getPublicKey);
+    console.log("Private key Value", getPrivateKey);
+  }
+  catch (error) {
+    console.log(error);
+  } 
+  finally {
+    if (db) {
+      await db.close();
+      console.log('Closed LevelDB');
+    }
+  }
+
+}
