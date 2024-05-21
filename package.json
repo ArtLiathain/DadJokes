@@ -1,5 +1,25 @@
-{ "dependencies": { "cors": "^2.8.5", "crypto": "^1.0.1", "express": "^4.19.2", "multer": "^1.4.5-lts.1", "mysql": "^2.18.1", "url": "^0.11.3" }, "name": "dadjokes", "module": "index.ts", "type": "module", "devDependencies": {
-  "@types/bun": "latest"
-}, "peerDependencies": {
-  "typescript": "^5.0.0"
-} }
+{
+  "dependencies": {
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1",
+    "mysql": "^2.18.1",
+    "url": "^0.11.3"
+  },
+  "name": "dadjokes",
+  "module": "index.ts",
+  "type": "module",
+  "devDependencies": {
+    "@eslint/js": "^9.3.0",
+    "@types/bun": "latest",
+    "eslint": "^9.3.0",
+    "globals": "^15.2.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "scripts": {
+    "lint": "eslint 'src/**/*.js'"
+  }
+}

@@ -38,7 +38,7 @@ const storage = multer.diskStorage({
 app.post("/addUser", function (req, res) {
   let pepper = "NoDictionaryTablesForYou";
   let sql = `INSERT INTO users VALUES ("${req.body.publickey}", "${req.body.user}", "${req.body.pass}","${req.body.salt}" ,"${pepper}")`;
-  con.query(sql, function (err, result) {
+  con.query(sql, function (err) {
     if (err) {
       return res.send({ message: "Value already in database" });
       
@@ -51,7 +51,7 @@ app.post("/addUser", function (req, res) {
 app.post("/validateUser", (req, res) => {
   //logic for hashing with salt or somethign if needed
   let sql = `SELECT * FROM users WHERE username = "${req.body.user}" AND password = "${req.body.pass}";`
-  con.query(sql, (error, result) =>{
+  con.query(sql, (error) =>{
     if (error) {
       console.log("error retrieving user");
       return res.status(400).json({ error: "Invalid" });
@@ -69,7 +69,7 @@ app.post("/addFile", upload.single("file"), (req, res) => {
   }
   console.log(`INSERT INTO fileStorage VALUES ("${req.file.filename}","${req.body.publickey}");`);
   let sql = `INSERT INTO fileStorage VALUES ("${req.file.filename}","${req.body.publickey}");`;
-  con.query(sql, (err, result) => {
+  con.query(sql, (err) => {
     if (err) {
       console.log(err);
       res.json({ message: "Value already in database" });
@@ -115,6 +115,6 @@ app.get("/downloadFile/:filename", (req, res) => {
   });
 });
 
-app.listen(port, () => {
+app.listen(port, hostname, () => {
   console.log("Server Listening on PORT:", port);
 });
