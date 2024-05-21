@@ -1,3 +1,4 @@
+const keyGen = require('./keyGen.js');
 const { createServer } = require('node:http');
 const { URL } = require('url');
 const querystring = require('querystring');
@@ -21,7 +22,7 @@ const server = createServer((req, res) => {
     queryParams.pass = crypto.createHash('sha1').update(queryParams.pass).digest('hex');
   }
 
-  storeKeysIndexDB();
+  keyStoreLevelDB();
   
   res.end(`Parameters: ${JSON.stringify(queryParams)}`);
 });
@@ -31,26 +32,26 @@ server.listen(port, hostname, () => {
 });
 
 
-async function storeKeysIndexDB() {
-  var publicKey = 678;
-  var privateKey = 123;
+async function keyStoreLevelDB() {
+  var publicKey = keyGen.createPublicKey();
+  var privateKey = keyGen.createPrivateKey();
   var db;
 
   try {
-  db = new Level('example', { valueEncoding: 'json' });
-    
-  await db.open();
-  console.log('Opened LevelDB');
+    db = new Level('example', { valueEncoding: 'json' });
+      
+    await db.open();
+    console.log('Opened LevelDB');
 
-  await db.put('Public Key', publicKey);
-  await db.put('Private Key', privateKey);
-  console.log("Successfully put Keys");
+    await db.put('Public Key : ', publicKey);
+    await db.put('Private Key : ', privateKey);
+    console.log("Successfully put Keys");
 
-  var getPublicKey = await db.get('Public Key');
-  var getPrivateKey = await db.get('Private Key');
+    var getPublicKey = await db.get('Public Key : ');
+    var getPrivateKey = await db.get('Private Key : ');
 
-  console.log("Public key Value", getPublicKey);
-  console.log("Private key Value", getPrivateKey);
+    console.log("Public key Value", getPublicKey);
+    console.log("Private key Value", getPrivateKey);
   }
   catch (error) {
     console.log(error);
