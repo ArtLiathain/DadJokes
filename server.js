@@ -59,72 +59,85 @@ app.post("/addUser", async function (req, res) {
   });
 });
 
-app.post("/validateUser", (req, res) => {
+app.post("/validateUser", async (req, res) => {
   //logic for hashing with salt or somethign if needed
-  let sql = `SELECT * FROM users WHERE username = "${req.body.user}" AND password = "${req.body.pass}";`
-  con.query(sql, (error, result) =>{
+  let sql = `SELECT password
+             FROM users
+             WHERE username = "${req.body.user}";`
+  // need to add support for pepper and salt maybe
+  if (await argon2.verify(result.rows[0].password, req.body.pass)) {
+    console.log("Password is correct");
+  } else {
+    console.log("Password is incorrect");
+  }
+
+  con.query(sql, (error, result) => {
     if (error) {
       console.log("error retrieving user");
-      return res.status(400).json({ error: "Invalid" });
+      return res.status(400).json({error: "Invalid"});
     } else {
-      res.json({message : "Valid user"});
+      res.json({message: "Valid user"});
     }
   })
-})
-
-const upload = multer({ storage: storage });
-
-app.post("/addFile", upload.single("file"), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "No file uploaded" });
   }
-  let sql = `INSERT INTO fileStorage VALUES ("${req.file.filename}","${req.body.topublickey}","${req.body.frompublickey}");`;
-  con.query(sql, (err, result) => {
-    if (err) {
-      console.log(err);
-      res.json({ message: "Value already in database" });
+)
 
-      return;
+  const upload = multer({storage: storage});
+
+  app.post("/addFile", upload.single("file"), (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({error: "No file uploaded"});
     }
-    console.log("1 record inserted");
-  });
-
-  res.json({
-    message: "File uploaded successfully",
-    filename: req.file.filename,
-  });
-});
-
-app.get("/allfiles/:publickey", (req, res) => {
-  con.query(
-    `SELECT filename from fileStorage WHERE topublickey = ${req.params.publickey}`,
-    (err, rows) => {
+    let sql = `INSERT INTO fileStorage
+               VALUES ("${req.file.filename}", "${req.body.topublickey}", "${req.body.frompublickey}");`;
+    con.query(sql, (err, result) => {
       if (err) {
-        console.log("error retrieving filenames");
-        return res.status(400).json({ error: "No files found" });
-      } else {
-        let listOfFiles = [];
-        for (let i = 0; i < rows.length; i++) {
-          listOfFiles.push(rows[i].filename);
-        }
-        res.json({files : listOfFiles});
+        console.log(err);
+        res.json({message: "Value already in database"});
+
+        return;
       }
-    }
-  );
-});
+      console.log("1 record inserted");
+    });
 
-app.get("/downloadFile/:filename", (req, res) => {
-  const filename = req.params.filename;
-  const filePath = path.join(__dirname, 'uploads', filename);
-
-  res.download(filePath, (err) => {
-    if (err) {
-      console.error("Error downloading the file: ", err);
-      res.status(404).send("File not found");
-    }
+    res.json({
+      message: "File uploaded successfully",
+      filename: req.file.filename,
+    });
   });
-});
 
-app.listen(port, () => {
-  console.log("Server Listening on PORT:", port);
-});
+  app.get("/allfiles/:publickey", (req, res) => {
+    con.query(
+        `SELECT filename
+         from fileStorage
+         WHERE topublickey = ${req.params.publickey}`,
+        (err, rows) => {
+          if (err) {
+            console.log("error retrieving filenames");
+            return res.status(400).json({error: "No files found"});
+          } else {
+            let listOfFiles = [];
+            for (let i = 0; i < rows.length; i++) {
+              listOfFiles.push(rows[i].filename);
+            }
+            res.json({files: listOfFiles});
+          }
+        }
+    );
+  });
+
+  app.get("/downloadFile/:filename", (req, res) => {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, 'uploads', filename);
+
+    res.download(filePath, (err) => {
+      if (err) {
+        console.error("Error downloading the file: ", err);
+        res.status(404).send("File not found");
+      }
+    });
+  });
+
+  app.listen(port, () => {
+    console.log("Server Listening on PORT:", port);
+  });
