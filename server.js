@@ -43,12 +43,12 @@ async function keyStoreLevelDB() {
     await db.open();
     console.log('Opened LevelDB');
 
-    await db.put('Public Key : ', publicKey);
-    await db.put('Private Key : ', privateKey);
+    await db.put('Username Public', publicKey);
+    await db.put('Username Private', privateKey);
     console.log("Successfully put Keys");
 
-    var getPublicKey = await db.get('Public Key : ');
-    var getPrivateKey = await db.get('Private Key : ');
+    var getPublicKey = await db.get('Username Public');
+    var getPrivateKey = await db.get('Username Private');
 
     console.log("Public key Value", getPublicKey);
     console.log("Private key Value", getPrivateKey);
