@@ -67,8 +67,7 @@ app.post("/addFile", upload.single("file"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }
-  console.log(`INSERT INTO fileStorage VALUES ("${req.file.filename}","${req.body.publickey}");`);
-  let sql = `INSERT INTO fileStorage VALUES ("${req.file.filename}","${req.body.publickey}");`;
+  let sql = `INSERT INTO fileStorage VALUES ("${req.file.filename}","${req.body.topublickey}","${req.body.frompublickey}");`;
   con.query(sql, (err, result) => {
     if (err) {
       console.log(err);
@@ -87,7 +86,7 @@ app.post("/addFile", upload.single("file"), (req, res) => {
 
 app.get("/allfiles/:publickey", (req, res) => {
   con.query(
-    `SELECT filename from fileStorage WHERE publickey = ${req.params.publickey}`,
+    `SELECT filename from fileStorage WHERE topublickey = ${req.params.publickey}`,
     (err, rows) => {
       if (err) {
         console.log("error retrieving filenames");
