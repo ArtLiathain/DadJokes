@@ -4,6 +4,7 @@ import multer from "multer";
 import path from "path";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+const argon2 = require('argon2');
 
 const hostname = "localhost";
 const port = 9022;
