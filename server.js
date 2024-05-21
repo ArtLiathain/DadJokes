@@ -4,7 +4,7 @@ import multer from "multer";
 import path from "path";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-const argon2 = require('argon2');
+import argon2 from "argon2";
 
 const hostname = "localhost";
 const port = 9022;
@@ -36,16 +36,26 @@ const storage = multer.diskStorage({
   },
 });
 
-app.post("/addUser", function (req, res) {
-  let pepper = "NoDictionaryTablesForYou";
-  let sql = `INSERT INTO users VALUES ("${req.body.publickey}", "${req.body.user}", "${req.body.pass}","${req.body.salt}" ,"${pepper}")`;
+app.post("/addUser", async function (req, res) {
+  let pepper = "TheLessYouKnow,ThePepper";
+  // Hash the password using Argon2id
+  if (req.body.pass) {
+    try {
+      const hash_pass = await argon2.hash(req.body.pass, {secret: Buffer.from(pepper)});
+
+    } catch (err) {
+      console.log("Error hashing password: ", err);
+    }
+  }
+  let sql = `INSERT INTO users
+             VALUES ("${req.body.publickey}", "${req.body.user}", "${hash_pass}", "${req.body.salt}")`;
   con.query(sql, function (err, result) {
     if (err) {
-      return res.send({ message: "Value already in database" });
-      
+      return res.send({message: "Value already in database"});
+
     }
     console.log("1 record inserted");
-    res.send({message : "Successfully added user"})
+    res.send({message: "Successfully added user"})
   });
 });
 
