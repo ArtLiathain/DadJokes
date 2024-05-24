@@ -1,4 +1,5 @@
 import 'dotenv/config'
+import {authenticateToken, generateAccessToken} from './JwtAuth.js'
 import mysql from "mysql";
 import express from "express";
 import multer from "multer";
@@ -13,10 +14,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 var con = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "art123",
-  database: "Dadjokes",
+  host: process.env.host,
+  user: process.env.user,
+  password: process.env.password,
+  database: process.env.database,
 });
 
 
@@ -57,18 +58,17 @@ app.post("/validateUser", (req, res) => {
       console.log("error retrieving user");
       return res.status(400).json({ error: "Invalid" });
     } else {
-      res.json({ message: "Valid user" });
+      res.json({ message: "Valid user", token: generateAccessToken({user: req.body.user, publicKey: "1233455"})});
     }
   });
 });
 
 const upload = multer({ storage: storage });
 
-app.post("/addFile", upload.single("file"), (req, res) => {
+app.post("/addFile",authenticateToken, upload.single("file"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }
-
   let sql = `INSERT INTO fileStorage VALUES ("${req.file.filename}","${req.body.topublickey}","${req.body.frompublickey}");`;
   con.query(sql, (err, result) => {
     if (err) {
