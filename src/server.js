@@ -1,7 +1,4 @@
-const keyGen = require("./keyGen.js");
-const level = require("level");
-const { Level } = level;
-
+import 'dotenv/config'
 import mysql from "mysql";
 import express from "express";
 import multer from "multer";
@@ -22,7 +19,6 @@ var con = mysql.createConnection({
   database: "Dadjokes",
 });
 
-// keyStoreLevelDB();
 
 con.connect(function (err) {
   if (err) throw err;

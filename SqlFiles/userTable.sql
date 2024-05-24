@@ -5,4 +5,4 @@ CREATE TABLE users (
     salt VARCHAR(255),
     pepper VARCHAR(255),
     PRIMARY KEY (publickey)
-)
+) ENGINE=InnoDB;
