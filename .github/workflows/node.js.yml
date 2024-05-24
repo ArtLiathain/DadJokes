@@ -27,6 +27,6 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
     - name: Check Package
-    - run: npm ci
+      run: npm ci
     - name: Lint
-    - run: npm lint
+      run: npm lint
