@@ -1,9 +1,13 @@
+const keyGen = require("./keyGen.js");
+const level = require("level");
+const { Level } = level;
+
 import mysql from "mysql";
 import express from "express";
 import multer from "multer";
 import path from "path";
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 
 const hostname = "localhost";
 const port = 9022;
@@ -17,6 +21,8 @@ var con = mysql.createConnection({
   password: "art123",
   database: "Dadjokes",
 });
+
+// keyStoreLevelDB();
 
 con.connect(function (err) {
   if (err) throw err;
@@ -41,25 +47,24 @@ app.post("/addUser", function (req, res) {
   con.query(sql, function (err) {
     if (err) {
       return res.send({ message: "Value already in database" });
-      
     }
     console.log("1 record inserted");
-    res.send({message : "Successfully added user"})
+    res.send({ message: "Successfully added user" });
   });
 });
 
 app.post("/validateUser", (req, res) => {
   //logic for hashing with salt or somethign if needed
-  let sql = `SELECT * FROM users WHERE username = "${req.body.user}" AND password = "${req.body.pass}";`
-  con.query(sql, (error) =>{
+  let sql = `SELECT * FROM users WHERE username = "${req.body.user}" AND password = "${req.body.pass}";`;
+  con.query(sql, (error) => {
     if (error) {
       console.log("error retrieving user");
       return res.status(400).json({ error: "Invalid" });
     } else {
-      res.json({message : "Valid user"});
+      res.json({ message: "Valid user" });
     }
-  })
-})
+  });
+});
 
 const upload = multer({ storage: storage });
 
@@ -67,9 +72,9 @@ app.post("/addFile", upload.single("file"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }
-  console.log(`INSERT INTO fileStorage VALUES ("${req.file.filename}","${req.body.publickey}");`);
-  let sql = `INSERT INTO fileStorage VALUES ("${req.file.filename}","${req.body.publickey}");`;
-  con.query(sql, (err) => {
+
+  let sql = `INSERT INTO fileStorage VALUES ("${req.file.filename}","${req.body.topublickey}","${req.body.frompublickey}");`;
+  con.query(sql, (err, result) => {
     if (err) {
       console.log(err);
       res.json({ message: "Value already in database" });
@@ -87,7 +92,7 @@ app.post("/addFile", upload.single("file"), (req, res) => {
 
 app.get("/allfiles/:publickey", (req, res) => {
   con.query(
-    `SELECT filename from fileStorage WHERE publickey = ${req.params.publickey}`,
+    `SELECT filename from fileStorage WHERE topublickey = ${req.params.publickey}`,
     (err, rows) => {
       if (err) {
         console.log("error retrieving filenames");
@@ -97,7 +102,7 @@ app.get("/allfiles/:publickey", (req, res) => {
         for (let i = 0; i < rows.length; i++) {
           listOfFiles.push(rows[i].filename);
         }
-        res.json({files : listOfFiles});
+        res.json({ files: listOfFiles });
       }
     }
   );
@@ -105,7 +110,7 @@ app.get("/allfiles/:publickey", (req, res) => {
 
 app.get("/downloadFile/:filename", (req, res) => {
   const filename = req.params.filename;
-  const filePath = path.join(__dirname, 'uploads', filename);
+  const filePath = path.join(__dirname, "uploads", filename);
 
   res.download(filePath, (err) => {
     if (err) {
@@ -118,3 +123,33 @@ app.get("/downloadFile/:filename", (req, res) => {
 app.listen(port, hostname, () => {
   console.log("Server Listening on PORT:", port);
 });
+
+async function keyStoreLevelDB() {
+  var publicKey = keyGen.createPublicKey();
+  var privateKey = keyGen.createPrivateKey();
+  var db;
+
+  try {
+    db = new Level("example", { valueEncoding: "json" });
+
+    await db.open();
+    console.log("Opened LevelDB");
+
+    await db.put("Username Public", publicKey);
+    await db.put("Username Private", privateKey);
+    console.log("Successfully put Keys");
+
+    var getPublicKey = await db.get("Username Public");
+    var getPrivateKey = await db.get("Username Private");
+
+    console.log("Public key Value", getPublicKey);
+    console.log("Private key Value", getPrivateKey);
+  } catch (error) {
+    console.log(error);
+  } finally {
+    if (db) {
+      await db.close();
+      console.log("Closed LevelDB");
+    }
+  }
+}
