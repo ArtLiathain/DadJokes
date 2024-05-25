@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { authenticateToken, generateAccessToken } from "./JwtAuth.js";
+import { authenticateToken, generateAccessToken, extractJwtClaims } from "./JwtAuth.js";
 import mysql from "mysql";
 import express from "express";
 import multer from "multer";
@@ -24,7 +24,7 @@ var con = mysql.createConnection({
 
 con.connect(function (err) {
   if (err) {
-    logger.error({error: err},"Failed to connect to database")
+    logger.error({ sqlError: err }, "Failed to connect to database");
     throw err;
   }
   logger.info("Connected to Database!");
@@ -38,18 +38,17 @@ const storage = multer.diskStorage({
     cb(null, "uploads/");
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + ":" + file.originalname);
+    cb(null, Date.now() + "-" + file.originalname);
   },
 });
 
 app.post("/addUser", function (req, res) {
-  let pepper = "NoDictionaryTablesForYou";
-  let sql = `INSERT INTO users VALUES ("${req.body.publickey}", "${req.body.user}", "${req.body.pass}","${req.body.salt}" ,"${pepper}")`;
+  let sql = `INSERT INTO users VALUES ("${req.body.publickey}", "${req.body.user}", "${req.body.pass}")`;
   con.query(sql, function (err) {
     if (err) {
       return res.send({ message: "Value already in database" });
     }
-    console.log("1 record inserted");
+    logger.info(`User with ${req.body.publickey} added`);
     res.send({ message: "Successfully added user" });
   });
 });
@@ -59,14 +58,15 @@ app.post("/validateUser", (req, res) => {
   let sql = `SELECT * FROM users WHERE username = "${req.body.user}" AND password = "${req.body.pass}";`;
   con.query(sql, (error) => {
     if (error) {
-      console.log("error retrieving user");
+      logger.error({ sqlError: error }, "error retrieving user");
       return res.status(400).json({ error: "Invalid" });
     } else {
+      logger.info("Sucessfully Logged in user");
       res.json({
         message: "Valid user",
         token: generateAccessToken({
           user: req.body.user,
-          publicKey: "1233455",
+          publicKey: "topublickey",
         }),
       });
     }
@@ -79,15 +79,21 @@ app.post("/addFile", authenticateToken, upload.single("file"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }
-  let sql = `INSERT INTO fileStorage VALUES ("${req.file.filename}","${req.body.topublickey}","${req.body.frompublickey}");`;
-  con.query(sql, (err, result) => {
+  const tokenParams = extractJwtClaims(req.headers["authorization"])
+  const sql = `INSERT INTO fileStorage VALUES ("${req.file.filename}","${req.body.topublickey}","${tokenParams.publicKey}");`;
+  con.query(sql, (err, _result) => {
     if (err) {
-      console.log(err);
-      res.json({ message: "Value already in database" });
-
+      logger.error({ sqlError: err}, "error inserting publickeys");
+      const filePath = path.join(__dirname, "uploads", req.file.filename);
+      fs.unlink(filePath, (err) => {
+        if (err) {
+          logger.error({ error: err }, "Error removing unuseable file");
+          return;
+        }
+      });
+      res.json({ message: "Error adding file" });
       return;
     }
-    console.log("1 record inserted");
   });
 
   res.json({
@@ -96,9 +102,10 @@ app.post("/addFile", authenticateToken, upload.single("file"), (req, res) => {
   });
 });
 
-app.get("/allfiles/:publickey", (req, res) => {
+app.get("/allfiles", authenticateToken, (req, res) => {
+  const tokenParams = extractJwtClaims(req.headers["authorization"])
   con.query(
-    `SELECT filename from fileStorage WHERE topublickey = ${req.params.publickey}`,
+    `SELECT filename from fileStorage WHERE topublickey = ${tokenParams.publicKey}`,
     (err, rows) => {
       if (err) {
         console.log("error retrieving filenames");
@@ -114,13 +121,13 @@ app.get("/allfiles/:publickey", (req, res) => {
   );
 });
 
-app.get("/downloadFile/:filename", (req, res) => {
+app.get("/downloadFile/:filename", authenticateToken, (req, res) => {
   const filename = req.params.filename;
   const filePath = path.join(__dirname, "uploads", filename);
 
   res.download(filePath, (err) => {
     if (err) {
-      console.error("Error downloading the file: ", err);
+      logger.error({error: err}, "Error downloading file");
       res.status(404).send("File not found");
     }
   });

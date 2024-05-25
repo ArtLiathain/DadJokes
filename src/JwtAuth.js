@@ -1,5 +1,5 @@
 import jwt from "jsonwebtoken";
-import 'dotenv/config'
+import "dotenv/config";
 
 export const generateAccessToken = (userDetails) => {
   const payload = {
@@ -38,5 +38,19 @@ const verifyAccessToken = (token) => {
     return { success: true, data: decoded };
   } catch (error) {
     return { success: false, error: error.message };
+  }
+};
+
+export const extractJwtClaims = (authHeader, fieldToGet) => {
+  const token = authHeader && authHeader.split(" ")[1];
+  try {
+    const decoded = jwt.decode(token, { complete: true });
+
+    if (!decoded) {
+      throw new Error("Invalid token");
+    }
+    return decoded.payload
+  } catch (error) {
+    return null;
   }
 };
