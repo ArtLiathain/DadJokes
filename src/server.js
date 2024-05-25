@@ -1,10 +1,10 @@
-import 'dotenv/config'
-import {authenticateToken, generateAccessToken} from './JwtAuth.js'
+import "dotenv/config";
+import { authenticateToken, generateAccessToken } from "./JwtAuth.js";
 import mysql from "mysql";
 import express from "express";
 import multer from "multer";
 import path from "path";
-import pino from 'pino';
+import pino from "pino";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
@@ -22,10 +22,12 @@ var con = mysql.createConnection({
   database: process.env.database,
 });
 
-
 con.connect(function (err) {
-  if (err) throw err;
-  logger.info("Connected!");
+  if (err) {
+    logger.error({error: err},"Failed to connect to database")
+    throw err;
+  }
+  logger.info("Connected to Database!");
 });
 
 const app = express();
@@ -60,14 +62,20 @@ app.post("/validateUser", (req, res) => {
       console.log("error retrieving user");
       return res.status(400).json({ error: "Invalid" });
     } else {
-      res.json({ message: "Valid user", token: generateAccessToken({user: req.body.user, publicKey: "1233455"})});
+      res.json({
+        message: "Valid user",
+        token: generateAccessToken({
+          user: req.body.user,
+          publicKey: "1233455",
+        }),
+      });
     }
   });
 });
 
 const upload = multer({ storage: storage });
 
-app.post("/addFile",authenticateToken, upload.single("file"), (req, res) => {
+app.post("/addFile", authenticateToken, upload.single("file"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }
