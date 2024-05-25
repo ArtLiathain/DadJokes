@@ -4,11 +4,13 @@ import mysql from "mysql";
 import express from "express";
 import multer from "multer";
 import path from "path";
+import pino from 'pino';
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
 const hostname = "localhost";
 const port = 9022;
+const logger = pino();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -23,7 +25,7 @@ var con = mysql.createConnection({
 
 con.connect(function (err) {
   if (err) throw err;
-  console.log("Connected!");
+  logger.info("Connected!");
 });
 
 const app = express();
