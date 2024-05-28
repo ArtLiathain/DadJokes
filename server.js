@@ -1,6 +1,7 @@
-const keyGen = require('./keyGen.js');
-const level = require('level');
-const { Level } = level;
+import {createPrivateKey, createPublicKey} from './keyGen.js';
+import level from 'level';
+// const level = require('level');
+// const { Level } = level;
 
 import mysql from "mysql";
 import express from "express";
@@ -22,7 +23,7 @@ var con = mysql.createConnection({
   database: "Dadjokes",
 });
 
-// keyStoreLevelDB();
+keyStoreLevelDB();
 
 con.connect(function (err) {
   if (err) throw err;
@@ -127,12 +128,12 @@ app.listen(port, () => {
 
 
 async function keyStoreLevelDB() {
-  var publicKey = keyGen.createPublicKey();
-  var privateKey = keyGen.createPrivateKey();
+  var publicKey = createPublicKey();
+  var privateKey = createPrivateKey();
   var db;
 
   try {
-    db = new Level('example', { valueEncoding: 'json' });
+    db = new level('example', { valueEncoding: 'json' });
       
     await db.open();
     console.log('Opened LevelDB');
