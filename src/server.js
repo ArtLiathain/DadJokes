@@ -1,10 +1,14 @@
-import 'dotenv/config'
-import {authenticateToken, generateAccessToken} from './JwtAuth.js'
+import "dotenv/config";
+import {
+  authenticateToken,
+  generateAccessToken,
+  getTokenPayload,
+} from "./JwtAuth.js";
 import mysql from "mysql";
 import express from "express";
 import multer from "multer";
 import path from "path";
-import pino from 'pino';
+import pino from "pino";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
@@ -21,7 +25,6 @@ var con = mysql.createConnection({
   password: process.env.password,
   database: process.env.database,
 });
-
 
 con.connect(function (err) {
   if (err) throw err;
@@ -60,23 +63,29 @@ app.post("/validateUser", (req, res) => {
       console.log("error retrieving user");
       return res.status(400).json({ error: "Invalid" });
     } else {
-      res.json({ message: "Valid user", token: generateAccessToken({user: req.body.user, publicKey: "1233455"})});
+      res.json({
+        message: "Valid user",
+        token: generateAccessToken({
+          user: req.body.user,
+          publicKey: "topublickey",
+        }),
+      });
     }
   });
 });
 
 const upload = multer({ storage: storage });
 
-app.post("/addFile",authenticateToken, upload.single("file"), (req, res) => {
+app.post("/addFile", authenticateToken, upload.single("file"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }
-  let sql = `INSERT INTO fileStorage VALUES ("${req.file.filename}","${req.body.topublickey}","${req.body.frompublickey}");`;
+  const params = getTokenPayload(req.headers["authorization"]);
+  let sql = `INSERT INTO fileStorage VALUES ("${req.file.filename}","${req.body.topublickey}","${params.publicKey}");`;
   con.query(sql, (err, result) => {
     if (err) {
       console.log(err);
       res.json({ message: "Value already in database" });
-
       return;
     }
     console.log("1 record inserted");
@@ -88,9 +97,10 @@ app.post("/addFile",authenticateToken, upload.single("file"), (req, res) => {
   });
 });
 
-app.get("/allfiles/:publickey", (req, res) => {
+app.get("/allfiles/:publickey", authenticateToken, (req, res) => {
+  const params = getTokenPayload(req.headers["authorization"]);
   con.query(
-    `SELECT filename from fileStorage WHERE topublickey = ${req.params.publickey}`,
+    `SELECT filename from fileStorage WHERE topublickey = ${params.publicKey}`,
     (err, rows) => {
       if (err) {
         console.log("error retrieving filenames");
@@ -106,16 +116,25 @@ app.get("/allfiles/:publickey", (req, res) => {
   );
 });
 
-app.get("/downloadFile/:filename", (req, res) => {
+app.get("/downloadFile/:filename", authenticateToken, (req, res) => {
   const filename = req.params.filename;
   const filePath = path.join(__dirname, "uploads", filename);
-
-  res.download(filePath, (err) => {
-    if (err) {
-      logger.error("Error downloading the file: ", err);
-      res.status(404).send("File not found");
+  con.query(
+    `SELECT filename from fileStorage WHERE topublickey = ${params.publicKey} AND filename = ${filename}`,
+    (err, rows) => {
+      if (err) {
+        console.log("File not found");
+        return res.status(401).json({ error: "You don't havce access" });
+      } else {
+        res.download(filePath, (err) => {
+          if (err) {
+            logger.error("Error downloading the file: ", err);
+            res.status(404).send("File not found");
+          }
+        });
+      }
     }
-  });
+  );
 });
 
 app.listen(port, hostname, () => {
