@@ -6,8 +6,9 @@ import mysql from "mysql";
 import express from "express";
 import multer from "multer";
 import path from "path";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import argon2 from 'argon2';
 
 const hostname = "localhost";
 const port = 9022;
@@ -41,30 +42,51 @@ const storage = multer.diskStorage({
   },
 });
 
-app.post("/addUser", function (req, res) {
-  let pepper = "NoDictionaryTablesForYou";
-  let sql = `INSERT INTO users VALUES ("${req.body.publickey}", "${req.body.user}", "${req.body.pass}","${req.body.salt}" ,"${pepper}")`;
-  con.query(sql, function (err) {
-    if (err) {
-      return res.send({ message: "Value already in database" });
+app.post("/addUser", async function (req, res) {
+  if (req.body.pass) {
+    try {
+      // Should be stored in HSM
+      let pepper = "TheLessYouKnow,ThePepper";
+      const hash_result = await argon2.hash(req.body.pass, {secret: Buffer.from(pepper)});
+      let sql = `INSERT INTO users
+             VALUES ("${req.body.publickey}", "${req.body.user}", "${hash_result}")`;
+      con.query(sql, function (err, result) {
+        if (err) {
+          return res.send({message: "Value already in database"});
+
+        }
+        console.log("1 record inserted");
+        res.send({message: "Successfully added user"})
+      });
+    } catch (err) {
+      console.log("Error hashing password: ", err);
     }
-    console.log("1 record inserted");
-    res.send({ message: "Successfully added user" });
-  });
+  }
 });
 
-app.post("/validateUser", (req, res) => {
-  //logic for hashing with salt or somethign if needed
-  let sql = `SELECT * FROM users WHERE username = "${req.body.user}" AND password = "${req.body.pass}";`;
-  con.query(sql, (error) => {
-    if (error) {
-      console.log("error retrieving user");
-      return res.status(400).json({ error: "Invalid" });
-    } else {
-      res.json({ message: "Valid user" });
+app.post("/validateUser", async (req, res) => {
+      //logic for hashing with salt or something if needed
+      let hash_db = `SELECT password
+             FROM users
+             WHERE username = "${req.body.user}";`
+      // need to add support for pepper and salt maybe
+      let pepper = "TheLessYouKnow,ThePepper";
+      if (await argon2.verify(hash_db, req.body.pass,{secret: Buffer.from(pepper)})) {
+        console.log("Password is correct");
+      } else {
+        console.log("Password is incorrect");
+      }
+
+      con.query(sql, (error, result) => {
+      if (error) {
+        console.log("error retrieving user");
+        return res.status(400).json({error: "Invalid"});
+      } else {
+        res.json({message: "Valid user"});
+      }
+      })
     }
-  });
-});
+)
 
 const upload = multer({ storage: storage });
 
