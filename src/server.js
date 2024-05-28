@@ -1,33 +1,32 @@
-const keyGen = require("./keyGen.js");
-const level = require("level");
-const { Level } = level;
-
+import 'dotenv/config'
+import {authenticateToken, generateAccessToken} from './JwtAuth.js'
 import mysql from "mysql";
 import express from "express";
 import multer from "multer";
 import path from "path";
+import pino from 'pino';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import argon2 from 'argon2';
 
 const hostname = "localhost";
 const port = 9022;
+const logger = pino();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 var con = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "art123",
-  database: "Dadjokes",
+  host: process.env.host,
+  user: process.env.user,
+  password: process.env.password,
+  database: process.env.database,
 });
 
-// keyStoreLevelDB();
 
 con.connect(function (err) {
   if (err) throw err;
-  console.log("Connected!");
+  logger.info("Connected!");
 });
 
 const app = express();
@@ -64,6 +63,7 @@ app.post("/addUser", async function (req, res) {
   }
 });
 
+
 app.post("/validateUser", async (req, res) => {
       //logic for hashing with salt or something if needed
       let hash_db = `SELECT password
@@ -73,6 +73,7 @@ app.post("/validateUser", async (req, res) => {
       let pepper = "TheLessYouKnow,ThePepper";
       if (await argon2.verify(hash_db, req.body.pass,{secret: Buffer.from(pepper)})) {
         console.log("Password is correct");
+        res.json({ message: "Valid user", token: generateAccessToken({user: req.body.user, publicKey: "1233455"})})
       } else {
         console.log("Password is incorrect");
       }
@@ -81,11 +82,10 @@ app.post("/validateUser", async (req, res) => {
 
 const upload = multer({ storage: storage });
 
-app.post("/addFile", upload.single("file"), (req, res) => {
+app.post("/addFile",authenticateToken, upload.single("file"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }
-
   let sql = `INSERT INTO fileStorage VALUES ("${req.file.filename}","${req.body.topublickey}","${req.body.frompublickey}");`;
   con.query(sql, (err, result) => {
     if (err) {
@@ -127,7 +127,7 @@ app.get("/downloadFile/:filename", (req, res) => {
 
   res.download(filePath, (err) => {
     if (err) {
-      console.error("Error downloading the file: ", err);
+      logger.error("Error downloading the file: ", err);
       res.status(404).send("File not found");
     }
   });
