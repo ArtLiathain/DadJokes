@@ -76,15 +76,6 @@ app.post("/validateUser", async (req, res) => {
       } else {
         console.log("Password is incorrect");
       }
-
-      con.query(sql, (error, result) => {
-      if (error) {
-        console.log("error retrieving user");
-        return res.status(400).json({error: "Invalid"});
-      } else {
-        res.json({message: "Valid user"});
-      }
-      })
     }
 )
 
