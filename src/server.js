@@ -1,5 +1,5 @@
-const keyGen = require('./keyGen.js');
-const level = require('level');
+const keyGen = require("./keyGen.js");
+const level = require("level");
 const { Level } = level;
 
 import mysql from "mysql";
@@ -76,15 +76,6 @@ app.post("/validateUser", async (req, res) => {
       } else {
         console.log("Password is incorrect");
       }
-
-      con.query(sql, (error, result) => {
-      if (error) {
-        console.log("error retrieving user");
-        return res.status(400).json({error: "Invalid"});
-      } else {
-        res.json({message: "Valid user"});
-      }
-      })
     }
 )
 
@@ -124,7 +115,7 @@ app.get("/allfiles/:publickey", (req, res) => {
         for (let i = 0; i < rows.length; i++) {
           listOfFiles.push(rows[i].filename);
         }
-        res.json({files : listOfFiles});
+        res.json({ files: listOfFiles });
       }
     }
   );
@@ -132,7 +123,7 @@ app.get("/allfiles/:publickey", (req, res) => {
 
 app.get("/downloadFile/:filename", (req, res) => {
   const filename = req.params.filename;
-  const filePath = path.join(__dirname, 'uploads', filename);
+  const filePath = path.join(__dirname, "uploads", filename);
 
   res.download(filePath, (err) => {
     if (err) {
@@ -142,10 +133,9 @@ app.get("/downloadFile/:filename", (req, res) => {
   });
 });
 
-app.listen(port, () => {
+app.listen(port, hostname, () => {
   console.log("Server Listening on PORT:", port);
 });
-
 
 async function keyStoreLevelDB() {
   var publicKey = keyGen.createPublicKey();
@@ -153,29 +143,26 @@ async function keyStoreLevelDB() {
   var db;
 
   try {
-    db = new Level('example', { valueEncoding: 'json' });
-      
-    await db.open();
-    console.log('Opened LevelDB');
+    db = new Level("example", { valueEncoding: "json" });
 
-    await db.put('Username Public', publicKey);
-    await db.put('Username Private', privateKey);
+    await db.open();
+    console.log("Opened LevelDB");
+
+    await db.put("Username Public", publicKey);
+    await db.put("Username Private", privateKey);
     console.log("Successfully put Keys");
 
-    var getPublicKey = await db.get('Username Public');
-    var getPrivateKey = await db.get('Username Private');
+    var getPublicKey = await db.get("Username Public");
+    var getPrivateKey = await db.get("Username Private");
 
     console.log("Public key Value", getPublicKey);
     console.log("Private key Value", getPrivateKey);
-  }
-  catch (error) {
+  } catch (error) {
     console.log(error);
-  } 
-  finally {
+  } finally {
     if (db) {
       await db.close();
-      console.log('Closed LevelDB');
+      console.log("Closed LevelDB");
     }
   }
-
 }
