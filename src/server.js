@@ -112,7 +112,7 @@ app.get("/downloadFile/:filename", (req, res) => {
 
   res.download(filePath, (err) => {
     if (err) {
-      console.error("Error downloading the file: ", err);
+      logger.error("Error downloading the file: ", err);
       res.status(404).send("File not found");
     }
   });
