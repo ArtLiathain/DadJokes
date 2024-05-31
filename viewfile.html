@@ -125,8 +125,9 @@
             fileBox.innerHTML = `
             <div class="file-man-box">
                 <a href="#" class="file-close"><i class="fa fa-times-circle"></i></a>
+<!--                take in file extension and add it to "https://coderthemes.com/highdmin/layouts/assets/images/file_icons/{}.svg" -->
                 <div class="file-img-box"><img src="${file.url}" alt="icon"></div>
-                <a href="#" class="file-download"><i class="fa fa-download"></i></a>
+                <a href="${"src/images/file-icon.png"}" class="file-download" download><i class="fa fa-download"></i></a>
                 <div class="file-man-title">
                     <h5 class="mb-0 text-overflow">${file.name}</h5>
                     <p class="mb-0"><small>${file.size}</small></p>
