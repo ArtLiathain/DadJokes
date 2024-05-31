@@ -11,10 +11,20 @@ import path from "path";
 import pino from "pino";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import { rateLimit } from "express-rate-limit";
+
 
 const hostname = "localhost";
 const port = 9022;
 const logger = pino();
+
+const limiter = rateLimit({
+  windowMs: 60 * 1000, // 5 minutes
+  limit: 5, // each IP can make up to 10 requests per `windowsMs` (5 minutes)
+  standardHeaders: true, // add the `RateLimit-*` headers to the response
+  legacyHeaders: false, // remove the `X-RateLimit-*` headers from the response
+  message: "Slow down Tommy you're going too fasht"
+});
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -33,6 +43,7 @@ con.connect(function (err) {
 
 const app = express();
 app.use(express.json());
+app.use(limiter);
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -57,7 +68,7 @@ app.post("/addUser", function (req, res) {
 
 app.post("/validateUser", (req, res) => {
   //logic for hashing with salt or somethign if needed
-  let sql = `SELECT * FROM users WHERE username = "${req.body.user}" AND password = "${req.body.pass}";`;
+  let sql = `SELECT * FROM users WHERE publickey = "${req.body.publickey}" AND password = "${req.body.pass}";`;
   con.query(sql, (error) => {
     if (error) {
       console.log("error retrieving user");
