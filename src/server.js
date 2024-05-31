@@ -13,7 +13,6 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { rateLimit } from "express-rate-limit";
 
-
 const hostname = "localhost";
 const port = 9022;
 const logger = pino();
@@ -23,7 +22,7 @@ const limiter = rateLimit({
   limit: 5, // each IP can make up to 10 requests per `windowsMs` (5 minutes)
   standardHeaders: true, // add the `RateLimit-*` headers to the response
   legacyHeaders: false, // remove the `X-RateLimit-*` headers from the response
-  message: "Slow down Tommy you're going too fasht"
+  message: "Slow down Tommy you're going too fasht",
 });
 
 const __filename = fileURLToPath(import.meta.url);
@@ -151,33 +150,3 @@ app.get("/downloadFile/:filename", authenticateToken, (req, res) => {
 app.listen(port, hostname, () => {
   console.log("Server Listening on PORT:", port);
 });
-
-async function keyStoreLevelDB() {
-  var publicKey = keyGen.createPublicKey();
-  var privateKey = keyGen.createPrivateKey();
-  var db;
-
-  try {
-    db = new Level("example", { valueEncoding: "json" });
-
-    await db.open();
-    console.log("Opened LevelDB");
-
-    await db.put("Username Public", publicKey);
-    await db.put("Username Private", privateKey);
-    console.log("Successfully put Keys");
-
-    var getPublicKey = await db.get("Username Public");
-    var getPrivateKey = await db.get("Username Private");
-
-    console.log("Public key Value", getPublicKey);
-    console.log("Private key Value", getPrivateKey);
-  } catch (error) {
-    console.log(error);
-  } finally {
-    if (db) {
-      await db.close();
-      console.log("Closed LevelDB");
-    }
-  }
-}
