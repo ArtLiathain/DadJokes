@@ -26,10 +26,17 @@
                             <!-- Dynamic content will be inserted here -->
                         </div>
                     </div>
+<!--                    <div class="text-center mt-3">-->
+<!--                        <button type="button" class="btn btn-outline-danger w-md waves-effect waves-light"><i class="mdi mdi-refresh"></i> Upload Files</button>-->
+<!--                    </div>-->
                     <div class="text-center mt-3">
-                        <button type="button" class="btn btn-outline-danger w-md waves-effect waves-light"><i class="mdi mdi-refresh"></i> Load More Files</button>
+                        <form>
+                            <input class="btn btn-outline-danger w-md waves-effect waves-light" type="file" id="myfile" name="myfile" multiple><br><br>
+                            <button type="submit" class="btn btn-outline-danger w-md waves-effect waves-light"><i class="mdi mdi-refresh"></i> Upload Files</button>
+                        </form>
                     </div>
-                </div>
+                    </div>
+
             </div>
 
         </div>
@@ -41,6 +48,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
 <script type="text/javascript">
     document.addEventListener("DOMContentLoaded", function() {
+        // need to get each parameter on request
         const files = [
             {
                 name: "invoice_project.pdf",
@@ -127,7 +135,7 @@
                 <a href="#" class="file-close"><i class="fa fa-times-circle"></i></a>
 <!--                take in file extension and add it to "https://coderthemes.com/highdmin/layouts/assets/images/file_icons/{}.svg" -->
                 <div class="file-img-box"><img src="${file.url}" alt="icon"></div>
-                <a href="${"src/images/file-icon.png"}" class="file-download" download><i class="fa fa-download"></i></a>
+                <a href="src/images/file-icon.png" class="file-download" download><i class="fa fa-download"></i></a>
                 <div class="file-man-title">
                     <h5 class="mb-0 text-overflow">${file.name}</h5>
                     <p class="mb-0"><small>${file.size}</small></p>
