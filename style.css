@@ -39,6 +39,25 @@ body{
     right: -30px;
     bottom: -80px;
 }
+
+.blur-background{
+    height: 90%;
+    width: 90%;
+    background-color: rgba(255,255,255,0.13);
+    position: absolute;
+    transform: translate(-50%,-50%);
+    top: 50%;
+    left: 50%;
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255,255,255,0.1);
+    box-shadow: 0 0 40px rgba(8,7,16,0.6);
+    padding: 50px 35px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
 form{
     height: 520px;
     width: 400px;
@@ -119,4 +138,33 @@ button{
 }
 .social i{
     margin-right: 4px;
+}
+.file {
+    display: flex;
+    align-items: center;
+    width: calc(50% - 10px);
+    margin-bottom: 20px;
+}
+.file img {
+    width: 40px;
+    height: 40px;
+    margin-right: 10px;
+}
+.file a {
+    text-decoration: none;
+    color: #fff;
+    display: flex;
+    align-items: center;
+}
+.file a:hover h2 {
+    text-decoration: underline;
+}
+.pagination {
+    text-align: center;
+    margin-top: 20px;
+}
+.pagination button {
+    margin: 0 5px;
+    padding: 5px 10px;
+    cursor: pointer;
 }

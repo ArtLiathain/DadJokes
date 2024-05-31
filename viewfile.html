@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Design by foolishdeveloper.com -->
+    <title>Dad Jokes</title>
+
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!--    link js-->
+    <script src="server.js"></script>
+    <script src="app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.1/css/all.min.css" integrity="sha256-2XFplPlrFClt0bIdPgpz8H7ojnk10H69xRqd9+uTShA=" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ionicons/4.5.6/css/ionicons.min.css" integrity="sha512-0/rEDduZGrqo4riUlwqyuHDQzp2D1ZCgH/gFIfjMIL5az8so6ZiXyhf1Rg8i6xsjv+z/Ubc4tt1thLigEcu6Ug==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+</head>
+<body>
+<div class="background">
+    <div class="shape"></div>
+    <div class="shape"></div>
+</div>
+<div class="blur-background" id="download-container">
+    <!-- Downloadable links will be populated here -->
+</div>
+
+</body>
+<script>
+    // JavaScript object containing file details
+    const files = [
+        { name: 'File-icon.png', url: 'src/images/file-icon.png', icon: 'src/images/file-icon.png' },
+        { name: 'Document.pdf', url: 'src/documents/document.pdf', icon: 'src/images/file-icon.png' },
+        { name: 'Image.jpg', url: 'src/images/image.jpg', icon: 'src/images/file-icon.png' },
+        { name: 'Presentation.pptx', url: 'src/presentations/presentation.pptx', icon: 'src/images/file-icon.png' },
+        { name: 'Presentation.pptx', url: 'src/presentations/presentation.pptx', icon: 'src/images/file-icon.png' },
+        { name: 'Presentation.pptx', url: 'src/presentations/presentation.pptx', icon: 'src/images/file-icon.png' },
+        { name: 'Presentation.pptx', url: 'src/presentations/presentation.pptx', icon: 'src/images/file-icon.png' },
+        { name: 'Presentation.pptx', url: 'src/presentations/presentation.pptx', icon: 'src/images/file-icon.png' },
+        // Add more files as needed
+    ];
+
+    // Function to populate the div with downloadable links
+    function populateDownloadLinks() {
+        const container = document.getElementById('download-container');
+
+        files.forEach(file => {
+            const fileDiv = document.createElement('div');
+            fileDiv.className = 'file';
+
+            const anchor = document.createElement('a');
+            anchor.href = file.url;
+            anchor.download = '';
+
+            const icon = document.createElement('img');
+            icon.src = file.icon;
+            icon.alt = file.name;
+
+            const heading = document.createElement('h2');
+            heading.textContent = file.name;
+
+            anchor.appendChild(icon);
+            anchor.appendChild(heading);
+            fileDiv.appendChild(anchor);
+            container.appendChild(fileDiv);
+        });
+    }
+
+    // Call the function to populate the download links
+    populateDownloadLinks();
+</script>
+</html>
