@@ -1,7 +1,8 @@
-body{
-    margin-top:20px;
-    background:#DCDCDC;
+body {
+    margin-top: 20px;
+    background: #DCDCDC;
 }
+
 .card-box {
     padding: 20px;
     border-radius: 3px;
@@ -14,7 +15,7 @@ body{
     border: 1px solid #e3eaef;
     border-radius: 5px;
     position: relative;
-    margin-bottom: 20px
+    margin-bottom: 20px;
 }
 
 .file-man-box .file-close {
@@ -24,41 +25,42 @@ body{
     font-size: 24px;
     right: 10px;
     top: 10px;
-    visibility: hidden
+    visibility: hidden;
 }
 
 .file-man-box .file-img-box {
     line-height: 120px;
-    text-align: center
+    text-align: center;
 }
 
 .file-man-box .file-img-box img {
-    height: 64px
+    height: 64px;
 }
 
 .file-man-box .file-download {
     font-size: 32px;
     color: #98a6ad;
     position: absolute;
-    right: 10px
+    right: 10px;
 }
 
 .file-man-box .file-download:hover {
-    color: #313a46
+    color: #313a46;
 }
 
 .file-man-box .file-man-title {
-    padding-right: 25px
+    padding-right: 25px;
 }
 
 .file-man-box:hover {
     -webkit-box-shadow: 0 0 24px 0 rgba(0, 0, 0, .06), 0 1px 0 0 rgba(0, 0, 0, .02);
-    box-shadow: 0 0 24px 0 rgba(0, 0, 0, .06), 0 1px 0 0 rgba(0, 0, 0, .02)
+    box-shadow: 0 0 24px 0 rgba(0, 0, 0, .06), 0 1px 0 0 rgba(0, 0, 0, .02);
 }
 
 .file-man-box:hover .file-close {
-    visibility: visible
+    visibility: visible;
 }
+
 .text-overflow {
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -66,6 +68,7 @@ body{
     width: 100%;
     overflow: hidden;
 }
+
 h5 {
     font-size: 15px;
 }
