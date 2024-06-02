@@ -1,7 +1,6 @@
 import crypto from 'crypto';
 
 export function createPublicKey() {
-    var crypto = require('crypto');
     var prime_length = 1536; // 2048 bits
     var diffHell = crypto.createDiffieHellman(prime_length);
     diffHell.generateKeys('base64');
@@ -10,7 +9,6 @@ export function createPublicKey() {
 }
 
 export function createPrivateKey() {
-    var crypto = require('crypto');
     var prime_length = 1536; // 2048 bits
     var diffHell = crypto.createDiffieHellman(prime_length);
     diffHell.generateKeys('base64');
