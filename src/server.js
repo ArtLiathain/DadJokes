@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { authenticateToken, generateAccessToken, extractJwtClaims } from "./JwtAuth.js";
+import { authenticateToken, generateAccessToken } from "./JwtAuth.js";
 import mysql from "mysql";
 import express from "express";
 import multer from "multer";
@@ -7,6 +7,7 @@ import path from "path";
 import pino from "pino";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import argon2 from "argon2";
 
 const hostname = "localhost";
 const port = 9022;
@@ -42,33 +43,61 @@ const storage = multer.diskStorage({
   },
 });
 
-app.post("/addUser", function (req, res) {
-  let sql = `INSERT INTO users VALUES ("${req.body.publickey}", "${req.body.user}", "${req.body.pass}")`;
-  con.query(sql, function (err) {
-    if (err) {
-      return res.send({ message: "Value already in database" });
+app.post("/addUser", async function (req, res) {
+  if (req.body.pass) {
+    try {
+      // Should be stored in HSM
+      const hash_result = await argon2.hash(req.body.pass, {
+        secret: Buffer.from(process.env.pepper),
+      });
+      let sql = "INSERT INTO users VALUES (?, ?, ?)";
+      con.query(
+        sql,
+        [req.body.publickey, req.body.user, hash_result],
+        function (err, result) {
+          if (err) {
+            console.log(err);
+            return res.send({ message: "Value already in database" });
+          }
+          console.log("1 record inserted");
+          res.send({ message: "Successfully added user" });
+        }
+      );
+    } catch (err) {
+      console.log("Error hashing password: ", err);
     }
-    logger.info(`User with ${req.body.publickey} added`);
-    res.send({ message: "Successfully added user" });
-  });
+  }
 });
 
-app.post("/validateUser", (req, res) => {
-  //logic for hashing with salt or somethign if needed
-  let sql = `SELECT * FROM users WHERE username = "${req.body.user}" AND password = "${req.body.pass}";`;
-  con.query(sql, (error) => {
-    if (error) {
-      logger.error({ sqlError: error }, "error retrieving user");
-      return res.status(400).json({ error: "Invalid" });
+app.post("/validateUser", async (req, res) => {
+  //logic for hashing with salt or something if needed
+  let hash_db = `SELECT password
+             FROM users
+             WHERE publickey=?;`;
+  con.query(hash_db, [req.body.publickey], async (err, rows) => {
+    if (err || rows.length == 0) {
+      console.log("error retrieving user");
+      console.log(err);
+      return res.status(400).json({ error: "Error retrieving user" });
     } else {
-      logger.info("Sucessfully Logged in user");
-      res.json({
-        message: "Valid user",
-        token: generateAccessToken({
-          user: req.body.user,
-          publicKey: "topublickey",
-        }),
-      });
+      if (
+        rows.length != 0 &&
+        (await argon2.verify(rows[0].password, req.body.pass, {
+          secret: Buffer.from(process.env.pepper),
+        }))
+      ) {
+        console.log("Password is correct");
+        res.json({
+          message: "Valid user",
+          token: generateAccessToken({
+            user: req.body.user,
+            publicKey: req.body.publicKey,
+          }),
+        });
+      } else {
+        console.log("Password is incorrect");
+        return res.status(400).json({ error: "Error retrieving user" });
+      }
     }
   });
 });
@@ -79,22 +108,19 @@ app.post("/addFile", authenticateToken, upload.single("file"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }
-  const tokenParams = extractJwtClaims(req.headers["authorization"])
-  const sql = `INSERT INTO fileStorage VALUES ("${req.file.filename}","${req.body.topublickey}","${tokenParams.publicKey}");`;
-  con.query(sql, (err, _result) => {
-    if (err) {
-      logger.error({ sqlError: err}, "error inserting publickeys");
-      const filePath = path.join(__dirname, "uploads", req.file.filename);
-      fs.unlink(filePath, (err) => {
-        if (err) {
-          logger.error({ error: err }, "Error removing unuseable file");
-          return;
-        }
-      });
-      res.json({ message: "Error adding file" });
-      return;
+  let sql = `INSERT INTO fileStorage VALUES (?, ?, ?);`;
+  con.query(
+    sql,
+    [req.file.filename, req.body.topublickey, req.body.frompublickey],
+    (err, result) => {
+      if (err) {
+        console.log(err);
+        res.json({ message: "Value already in database" });
+        return;
+      }
+      console.log("1 record inserted");
     }
-  });
+  );
 
   res.json({
     message: "File uploaded successfully",
@@ -105,7 +131,8 @@ app.post("/addFile", authenticateToken, upload.single("file"), (req, res) => {
 app.get("/allfiles", authenticateToken, (req, res) => {
   const tokenParams = extractJwtClaims(req.headers["authorization"])
   con.query(
-    `SELECT filename from fileStorage WHERE topublickey = ${tokenParams.publicKey}`,
+    `SELECT filename from fileStorage WHERE topublickey = ?`,
+    [req.params.publickey],
     (err, rows) => {
       if (err) {
         console.log("error retrieving filenames");
@@ -127,7 +154,7 @@ app.get("/downloadFile/:filename", authenticateToken, (req, res) => {
 
   res.download(filePath, (err) => {
     if (err) {
-      logger.error({error: err}, "Error downloading file");
+      logger.error("Error downloading the file: ", err);
       res.status(404).send("File not found");
     }
   });
