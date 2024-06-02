@@ -41,7 +41,7 @@ const verifyAccessToken = (token) => {
   }
 };
 
-export const extractJwtClaims = (authHeader, fieldToGet) => {
+export const extractJwtClaims = (authHeader) => {
   const token = authHeader && authHeader.split(" ")[1];
   try {
     const decoded = jwt.decode(token, { complete: true });
