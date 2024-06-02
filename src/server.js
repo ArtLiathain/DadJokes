@@ -46,7 +46,6 @@ const storage = multer.diskStorage({
 app.post("/addUser", async function (req, res) {
   if (req.body.pass) {
     try {
-      // Should be stored in HSM
       const hash_result = await argon2.hash(req.body.pass, {
         secret: Buffer.from(process.env.pepper),
       });
@@ -56,29 +55,30 @@ app.post("/addUser", async function (req, res) {
         [req.body.publickey, req.body.user, hash_result],
         function (err, result) {
           if (err) {
-            console.log(err);
-            return res.send({ message: "Value already in database" });
+            logger.error({ sqlError: err }, "Error adding value to database");
+            return res.status(400).send();
           }
-          console.log("1 record inserted");
+          logger.info(`Inserted new user ${req.body.user}`);
           res.send({ message: "Successfully added user" });
         }
       );
     } catch (err) {
-      console.log("Error hashing password: ", err);
+      logger.error({ Error: err }, "Error creating user password");
+      res.status(500).send();
     }
+  } else {
+    res.status(400).send();
   }
 });
 
 app.post("/validateUser", async (req, res) => {
-  //logic for hashing with salt or something if needed
   let hash_db = `SELECT password
              FROM users
              WHERE publickey=?;`;
   con.query(hash_db, [req.body.publickey], async (err, rows) => {
     if (err || rows.length == 0) {
-      console.log("error retrieving user");
-      console.log(err);
-      return res.status(400).json({ error: "Error retrieving user" });
+      logger.error({ sqlError: err }, "Error retrieving value from database");
+      return res.status(400).json();
     } else {
       if (
         rows.length != 0 &&
@@ -86,7 +86,7 @@ app.post("/validateUser", async (req, res) => {
           secret: Buffer.from(process.env.pepper),
         }))
       ) {
-        console.log("Password is correct");
+        logger.info(`User ${req.body.user} successfully logged in`);
         res.json({
           message: "Valid user",
           token: generateAccessToken({
@@ -95,8 +95,8 @@ app.post("/validateUser", async (req, res) => {
           }),
         });
       } else {
-        console.log("Password is incorrect");
-        return res.status(400).json({ error: "Error retrieving user" });
+        logger.warn(`Invalid login attempt on user ${req.body.user}`);
+        return res.status(400).json();
       }
     }
   });
@@ -105,37 +105,38 @@ app.post("/validateUser", async (req, res) => {
 const upload = multer({ storage: storage });
 
 app.post("/addFile", authenticateToken, upload.single("file"), (req, res) => {
+  const tokenParams = extractJwtClaims(req.headers["authorization"]);
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }
   let sql = `INSERT INTO fileStorage VALUES (?, ?, ?);`;
   con.query(
     sql,
-    [req.file.filename, req.body.topublickey, req.body.frompublickey],
+    [req.file.filename, req.body.topublickey, tokenParams.frompublickey],
     (err, result) => {
       if (err) {
-        console.log(err);
-        res.json({ message: "Value already in database" });
+        logger.error({ sqlError: err }, "Error inserting filename");
+        res.status(400).json();
         return;
       }
-      console.log("1 record inserted");
+      logger.info(`File ${req.file.filename} inserted sucessfully`);
     }
   );
 
-  res.json({
+  res.status(200).json({
     message: "File uploaded successfully",
     filename: req.file.filename,
   });
 });
 
 app.get("/allfiles", authenticateToken, (req, res) => {
-  const tokenParams = extractJwtClaims(req.headers["authorization"])
+  const tokenParams = extractJwtClaims(req.headers["authorization"]);
   con.query(
     `SELECT filename from fileStorage WHERE topublickey = ?`,
-    [req.params.publickey],
+    [tokenParams.publickey],
     (err, rows) => {
       if (err) {
-        console.log("error retrieving filenames");
+        logger.error({ sqlError: err }, "error retrieving filenames");
         return res.status(400).json({ error: "No files found" });
       } else {
         let listOfFiles = [];
@@ -151,7 +152,17 @@ app.get("/allfiles", authenticateToken, (req, res) => {
 app.get("/downloadFile/:filename", authenticateToken, (req, res) => {
   const filename = req.params.filename;
   const filePath = path.join(__dirname, "uploads", filename);
-
+  const tokenParams = extractJwtClaims(req.headers["authorization"]);
+  con.query(
+    `SELECT filename from fileStorage WHERE topublickey = ? AND filename = ?`,
+    [tokenParams.publickey, filename],
+    (err, rows) => {
+      if (err) {
+        logger.error({ sqlError: err }, "Invalid download attempt");
+        return res.status(400).json();
+      }
+    }
+  );
   res.download(filePath, (err) => {
     if (err) {
       logger.error("Error downloading the file: ", err);
