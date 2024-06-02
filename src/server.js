@@ -4,6 +4,7 @@ import {
   generateAccessToken,
   getTokenPayload,
 } from "./JwtAuth.js";
+import {createPrivateKey, createPublicKey} from './keyGen.js';
 import mysql from "mysql";
 import express from "express";
 import multer from "multer";
@@ -34,6 +35,7 @@ var con = mysql.createConnection({
   user: process.env.user,
   password: process.env.password,
   database: process.env.database,
+  pepper: process.env.pepper
 });
 
 con.connect(function (err) {
@@ -58,7 +60,7 @@ app.post("/addUser", async function (req, res) {
   if (req.body.pass) {
     try {
       // Should be stored in HSM
-      let pepper = "TheLessYouKnow,ThePepper";
+      let pepper = process.env.pepper;
       const hash_result = await argon2.hash(req.body.pass, {secret: Buffer.from(pepper)});
       let sql = `INSERT INTO users
              VALUES ("${req.body.publickey}", "${req.body.user}", "${hash_result}")`;
@@ -82,7 +84,7 @@ app.post("/validateUser", async (req, res) => {
              FROM users
              WHERE username = "${req.body.user}";`
       // need to add support for pepper and salt maybe
-      let pepper = "TheLessYouKnow,ThePepper";
+      let pepper = process.env.pepper;
       if (await argon2.verify(hash_db, req.body.pass,{secret: Buffer.from(pepper)})) {
         console.log("Password is correct");
         res.json({ message: "Valid user", token: generateAccessToken({user: req.body.user, publicKey: "1233455"})})
@@ -158,3 +160,4 @@ app.get("/downloadFile/:filename", authenticateToken, (req, res) => {
 app.listen(port, hostname, () => {
   console.log("Server Listening on PORT:", port);
 });
+
