@@ -9,6 +9,7 @@ import express from "express";
 import multer from "multer";
 import path from "path";
 import pino from "pino";
+import { Level } from "level";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { rateLimit } from "express-rate-limit";
@@ -25,6 +26,10 @@ const limiter = rateLimit({
   legacyHeaders: false,
   message: "Slow down Tommy you're going too fasht",
 });
+
+const db = new Level("example", { valueEncoding: "json" });
+await db.open();
+logger.info("Opened LevelDB");
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -186,5 +191,5 @@ app.get("/downloadFile/:filename", authenticateToken, (req, res) => {
 });
 
 app.listen(port, hostname, () => {
-  console.log("Server Listening on PORT:", port);
+  logger.info(`Server Listening on PORT: ${port}`);
 });

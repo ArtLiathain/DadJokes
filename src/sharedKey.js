@@ -7,6 +7,7 @@ export const deriveSharedKey = (publicKey, privateKey, sharedText) => {
   const sharedSecret = ecdh.computeSecret(publicKey, "hex");
 
   // derive key using shared secret and shared text
+  //maybe MD5?
   const hkdf = crypto.createHmac("sha256", sharedSecret);
   hkdf.update(sharedText);
   const derivedKey = hkdf.digest();
