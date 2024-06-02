@@ -51,6 +51,7 @@ export const extractJwtClaims = (authHeader) => {
     }
     return decoded.payload
   } catch (error) {
+    console.log(error);
     return null;
   }
 };
