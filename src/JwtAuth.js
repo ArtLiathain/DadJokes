@@ -4,7 +4,7 @@ import "dotenv/config";
 export const generateAccessToken = (userDetails) => {
   const payload = {
     publicKey: userDetails.publicKey,
-    email: userDetails.email,
+    user: userDetails.email,
   };
   const secret = process.env.JWT_SECRET;
   const options = { expiresIn: "1h" };

@@ -1,5 +1,10 @@
 import "dotenv/config";
-import { authenticateToken, generateAccessToken } from "./JwtAuth.js";
+import {
+  authenticateToken,
+  generateAccessToken,
+  getTokenPayload,
+} from "./JwtAuth.js";
+import {createPrivateKey, createPublicKey} from './keyGen.js';
 import mysql from "mysql";
 import express from "express";
 import multer from "multer";
@@ -7,11 +12,21 @@ import path from "path";
 import pino from "pino";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-import argon2 from "argon2";
+import { rateLimit } from "express-rate-limit";
+import argon2 from 'argon2';
+
 
 const hostname = "localhost";
 const port = 9022;
 const logger = pino();
+
+const limiter = rateLimit({
+  windowMs: 60 * 1000, // 5 minutes
+  limit: 5, // each IP can make up to 10 requests per `windowsMs` (5 minutes)
+  standardHeaders: true, // add the `RateLimit-*` headers to the response
+  legacyHeaders: false, // remove the `X-RateLimit-*` headers from the response
+  message: "Slow down Tommy you're going too fasht",
+});
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -21,6 +36,7 @@ var con = mysql.createConnection({
   user: process.env.user,
   password: process.env.password,
   database: process.env.database,
+  pepper: process.env.pepper
 });
 
 con.connect(function (err) {
@@ -33,6 +49,7 @@ con.connect(function (err) {
 
 const app = express();
 app.use(express.json());
+app.use(limiter);
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -86,7 +103,6 @@ app.post("/validateUser", async (req, res) => {
           secret: Buffer.from(process.env.pepper),
         }))
       ) {
-        logger.info(`User ${req.body.user} successfully logged in`);
         res.json({
           message: "Valid user",
           token: generateAccessToken({
@@ -168,39 +184,10 @@ app.get("/downloadFile/:filename", authenticateToken, (req, res) => {
       logger.error("Error downloading the file: ", err);
       res.status(404).send("File not found");
     }
-  });
+  );
 });
 
 app.listen(port, hostname, () => {
   console.log("Server Listening on PORT:", port);
 });
 
-async function keyStoreLevelDB() {
-  var publicKey = keyGen.createPublicKey();
-  var privateKey = keyGen.createPrivateKey();
-  var db;
-
-  try {
-    db = new Level("example", { valueEncoding: "json" });
-
-    await db.open();
-    console.log("Opened LevelDB");
-
-    await db.put("Username Public", publicKey);
-    await db.put("Username Private", privateKey);
-    console.log("Successfully put Keys");
-
-    var getPublicKey = await db.get("Username Public");
-    var getPrivateKey = await db.get("Username Private");
-
-    console.log("Public key Value", getPublicKey);
-    console.log("Private key Value", getPrivateKey);
-  } catch (error) {
-    console.log(error);
-  } finally {
-    if (db) {
-      await db.close();
-      console.log("Closed LevelDB");
-    }
-  }
-}
