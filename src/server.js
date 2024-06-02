@@ -78,6 +78,7 @@ app.post("/addUser", async function (req, res) {
             logger.error({ sqlError: err }, "Error adding value to database");
             return res.status(400).send();
           }
+          // Add new publickey
           logger.info(`Inserted new user ${req.body.user}`);
           res.send({ message: "Successfully added user" });
         }
@@ -106,6 +107,7 @@ app.post("/validateUser", async (req, res) => {
           secret: Buffer.from(process.env.pepper),
         }))
       ) {
+        //get publickey (might be on frontend)
         res.json({
           message: "Valid user",
           token: generateAccessToken({
