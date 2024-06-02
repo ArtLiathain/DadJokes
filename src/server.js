@@ -1,10 +1,9 @@
 import "dotenv/config";
 import {
   authenticateToken,
+  extractJwtClaims,
   generateAccessToken,
-  getTokenPayload,
 } from "./JwtAuth.js";
-import {createPrivateKey, createPublicKey} from './keyGen.js';
 import mysql from "mysql";
 import express from "express";
 import multer from "multer";
@@ -13,8 +12,7 @@ import pino from "pino";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { rateLimit } from "express-rate-limit";
-import argon2 from 'argon2';
-
+import argon2 from "argon2";
 
 const hostname = "localhost";
 const port = 9022;
@@ -36,7 +34,7 @@ var con = mysql.createConnection({
   user: process.env.user,
   password: process.env.password,
   database: process.env.database,
-  pepper: process.env.pepper
+  pepper: process.env.pepper,
 });
 
 con.connect(function (err) {
@@ -172,7 +170,7 @@ app.get("/downloadFile/:filename", authenticateToken, (req, res) => {
   con.query(
     `SELECT filename from fileStorage WHERE topublickey = ? AND filename = ?`,
     [tokenParams.publickey, filename],
-    (err, rows) => {
+    (err) => {
       if (err) {
         logger.error({ sqlError: err }, "Invalid download attempt");
         return res.status(400).json();
@@ -184,10 +182,9 @@ app.get("/downloadFile/:filename", authenticateToken, (req, res) => {
       logger.error("Error downloading the file: ", err);
       res.status(404).send("File not found");
     }
-  );
+  });
 });
 
 app.listen(port, hostname, () => {
   console.log("Server Listening on PORT:", port);
 });
-
