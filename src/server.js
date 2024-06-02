@@ -19,10 +19,10 @@ const port = 9022;
 const logger = pino();
 
 const limiter = rateLimit({
-  windowMs: 60 * 1000, // 5 minutes
-  limit: 5, // each IP can make up to 10 requests per `windowsMs` (5 minutes)
-  standardHeaders: true, // add the `RateLimit-*` headers to the response
-  legacyHeaders: false, // remove the `X-RateLimit-*` headers from the response
+  windowMs: 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
   message: "Slow down Tommy you're going too fasht",
 });
 
@@ -59,7 +59,7 @@ const storage = multer.diskStorage({
 });
 
 app.post("/addUser", async function (req, res) {
-  if (req.body.pass) {
+  if (req.body.pass && req.body.publicKey.isInteger()) {
     try {
       const hash_result = await argon2.hash(req.body.pass, {
         secret: Buffer.from(process.env.pepper),
