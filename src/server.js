@@ -15,6 +15,7 @@ import { dirname } from "path";
 import { rateLimit } from "express-rate-limit";
 import argon2 from 'argon2';
 
+
 const hostname = "localhost";
 const port = 9022;
 const logger = pino();
@@ -60,18 +61,22 @@ app.post("/addUser", async function (req, res) {
   if (req.body.pass) {
     try {
       // Should be stored in HSM
-      let pepper = process.env.pepper;
-      const hash_result = await argon2.hash(req.body.pass, {secret: Buffer.from(pepper)});
-      let sql = `INSERT INTO users
-             VALUES ("${req.body.publickey}", "${req.body.user}", "${hash_result}")`;
-      con.query(sql, function (err, result) {
-        if (err) {
-          return res.send({message: "Value already in database"});
-
-        }
-        console.log("1 record inserted");
-        res.send({message: "Successfully added user"})
+      const hash_result = await argon2.hash(req.body.pass, {
+        secret: Buffer.from(process.env.pepper),
       });
+      let sql = "INSERT INTO users VALUES (?, ?, ?)";
+      con.query(
+        sql,
+        [req.body.publickey, req.body.user, hash_result],
+        function (err, result) {
+          if (err) {
+            console.log(err);
+            return res.send({ message: "Value already in database" });
+          }
+          console.log("1 record inserted");
+          res.send({ message: "Successfully added user" });
+        }
+      );
     } catch (err) {
       console.log("Error hashing password: ", err);
     }
@@ -79,20 +84,41 @@ app.post("/addUser", async function (req, res) {
 });
 
 app.post("/validateUser", async (req, res) => {
-      //logic for hashing with salt or something if needed
-      let hash_db = `SELECT password
+  //logic for hashing with salt or something if needed
+  let pass = null;
+  let hash_db = `SELECT password
              FROM users
-             WHERE username = "${req.body.user}";`
-      // need to add support for pepper and salt maybe
-      let pepper = process.env.pepper;
-      if (await argon2.verify(hash_db, req.body.pass,{secret: Buffer.from(pepper)})) {
+             WHERE publickey=?;`;
+  con.query(hash_db, [req.body.publickey], async (err, rows) => {
+    console.log(rows);
+    console.log(err);
+    if (err || rows.length == 0) {
+      console.log("error retrieving user");
+      console.log(err);
+      return res.status(400).json({ error: "Error retrieving user" });
+    } else {
+      if (
+        pass != null &&
+        (await argon2.verify(pass, req.body.pass, {
+          secret: Buffer.from(process.env.pepper),
+        }))
+      ) {
+
         console.log("Password is correct");
-        res.json({ message: "Valid user", token: generateAccessToken({user: req.body.user, publicKey: "1233455"})})
+        res.json({
+          message: "Valid user",
+          token: generateAccessToken({
+            user: req.body.user,
+            publicKey: req.body.publicKey,
+          }),
+        });
       } else {
         console.log("Password is incorrect");
+        return res.status(400).json({ error: "Error retrieving user" });
       }
     }
-)
+  });
+});
 
 const upload = multer({ storage: storage });
 
