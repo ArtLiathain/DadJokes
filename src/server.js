@@ -1,3 +1,4 @@
+import {createPrivateKey, createPublicKey} from './keyGen.js';
 import 'dotenv/config'
 import {authenticateToken, generateAccessToken} from './JwtAuth.js'
 import mysql from "mysql";
@@ -139,8 +140,8 @@ app.listen(port, hostname, () => {
 });
 
 async function keyStoreLevelDB() {
-  var publicKey = keyGen.createPublicKey();
-  var privateKey = keyGen.createPrivateKey();
+  var publicKey = createPublicKey();
+  var privateKey = createPrivateKey();
   var db;
 
   try {
