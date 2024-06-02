@@ -1,5 +1,6 @@
-import "dotenv/config";
-import { authenticateToken, generateAccessToken } from "./JwtAuth.js";
+import {createPrivateKey, createPublicKey} from './keyGen.js';
+import 'dotenv/config'
+import {authenticateToken, generateAccessToken} from './JwtAuth.js'
 import mysql from "mysql";
 import express from "express";
 import multer from "multer";
@@ -21,6 +22,7 @@ var con = mysql.createConnection({
   user: process.env.user,
   password: process.env.password,
   database: process.env.database,
+  pepper: process.env.pepper
 });
 
 con.connect(function (err) {
@@ -86,6 +88,7 @@ app.post("/validateUser", async (req, res) => {
           secret: Buffer.from(process.env.pepper),
         }))
       ) {
+
         console.log("Password is correct");
         res.json({
           message: "Valid user",
@@ -160,8 +163,8 @@ app.listen(port, hostname, () => {
 });
 
 async function keyStoreLevelDB() {
-  var publicKey = keyGen.createPublicKey();
-  var privateKey = keyGen.createPrivateKey();
+  var publicKey = createPublicKey();
+  var privateKey = createPrivateKey();
   var db;
 
   try {
