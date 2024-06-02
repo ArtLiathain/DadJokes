@@ -183,8 +183,7 @@ app.get("/downloadFile/:filename", authenticateToken, (req, res) => {
     if (err) {
       logger.error("Error downloading the file: ", err);
       res.status(404).send("File not found");
-    }
-  );
+    };
 });
 
 app.listen(port, hostname, () => {
