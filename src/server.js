@@ -68,21 +68,18 @@ app.post("/addUser", async function (req, res) {
 
 app.post("/validateUser", async (req, res) => {
   //logic for hashing with salt or something if needed
-  let pass = null;
   let hash_db = `SELECT password
              FROM users
              WHERE publickey=?;`;
   con.query(hash_db, [req.body.publickey], async (err, rows) => {
-    console.log(rows);
-    console.log(err);
     if (err || rows.length == 0) {
       console.log("error retrieving user");
       console.log(err);
       return res.status(400).json({ error: "Error retrieving user" });
     } else {
       if (
-        pass != null &&
-        (await argon2.verify(pass, req.body.pass, {
+        rows.length != 0 &&
+        (await argon2.verify(rows[0].password, req.body.pass, {
           secret: Buffer.from(process.env.pepper),
         }))
       ) {
@@ -108,16 +105,19 @@ app.post("/addFile", authenticateToken, upload.single("file"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }
-  let sql = `INSERT INTO fileStorage VALUES ("${req.file.filename}","${req.body.topublickey}","${req.body.frompublickey}");`;
-  con.query(sql, (err, result) => {
-    if (err) {
-      console.log(err);
-      res.json({ message: "Value already in database" });
-
-      return;
+  let sql = `INSERT INTO fileStorage VALUES (?, ?, ?);`;
+  con.query(
+    sql,
+    [req.file.filename, req.body.topublickey, req.body.frompublickey],
+    (err, result) => {
+      if (err) {
+        console.log(err);
+        res.json({ message: "Value already in database" });
+        return;
+      }
+      console.log("1 record inserted");
     }
-    console.log("1 record inserted");
-  });
+  );
 
   res.json({
     message: "File uploaded successfully",
@@ -127,7 +127,8 @@ app.post("/addFile", authenticateToken, upload.single("file"), (req, res) => {
 
 app.get("/allfiles/:publickey", (req, res) => {
   con.query(
-    `SELECT filename from fileStorage WHERE topublickey = ${req.params.publickey}`,
+    `SELECT filename from fileStorage WHERE topublickey = ?`,
+    [req.params.publickey],
     (err, rows) => {
       if (err) {
         console.log("error retrieving filenames");
