@@ -22,6 +22,9 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
+        
+    - name: Packages
+      run: npm i
       
     - name: Lint
       run: npm run lint
@@ -48,6 +51,9 @@ jobs:
           mysql root password: ${{ secrets.ROOT_PASSWORD }} # Required if "mysql user" is empty, default is empty. The root superuser password
           mysql user: 'developer' # Required if "mysql root password" is empty, default is empty. The superuser for the specified database. Can use secrets, too
           mysql password: ${{ secrets.DATABASE_PASSWORD }} # Required if "mysql user" exists. The password for the "mysql user"
-          
+      
+      - name: Packages
+        run: npm i
+      
       - name: Test
         run: npm run test
