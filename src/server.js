@@ -10,6 +10,7 @@ import express from "express";
 import multer from "multer";
 import path from "path";
 import pino from "pino";
+import { Level } from "level";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { rateLimit } from "express-rate-limit";
@@ -26,6 +27,10 @@ const limiter = rateLimit({
   legacyHeaders: false, // remove the `X-RateLimit-*` headers from the response
   message: "Slow down Tommy you're going too fasht",
 });
+
+const db = new Level("example", { valueEncoding: "json" });
+await db.open();
+logger.info("Opened LevelDB");
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -59,7 +64,7 @@ const storage = multer.diskStorage({
 });
 
 app.post("/addUser", async function (req, res) {
-  if (req.body.pass) {
+  if (req.body.pass && req.body.publicKey.isInteger()) {
     try {
       const hash_result = await argon2.hash(req.body.pass, {
         secret: Buffer.from(process.env.pepper),
@@ -73,6 +78,7 @@ app.post("/addUser", async function (req, res) {
             logger.error({ sqlError: err }, "Error adding value to database");
             return res.status(400).send();
           }
+          // Add new publickey
           logger.info(`Inserted new user ${req.body.user}`);
           res.send({ message: "Successfully added user" });
         }
@@ -101,6 +107,7 @@ app.post("/validateUser", async (req, res) => {
           secret: Buffer.from(process.env.pepper),
         }))
       ) {
+        //get publickey (might be on frontend)
         res.json({
           message: "Valid user",
           token: generateAccessToken(req.body.publickey),
@@ -185,7 +192,7 @@ app.get("/downloadFile/:filename", authenticateToken, (req, res) => {
   });
 });
 
-const server = app.listen(port, hostname, () => {
-  logger.info("Server Listening on PORT: 9022");
+app.listen(port, hostname, () => {
+  logger.info(`Server Listening on PORT: ${port}`);
 });
 export default server;
