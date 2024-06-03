@@ -1,10 +1,9 @@
 import jwt from "jsonwebtoken";
 import "dotenv/config";
 
-export const generateAccessToken = (userDetails) => {
+export const generateAccessToken = (publicKey) => {
   const payload = {
-    publicKey: userDetails.publicKey,
-    user: userDetails.email,
+    publickey: publicKey,
   };
   const secret = process.env.JWT_SECRET;
   const options = { expiresIn: "1h" };
@@ -13,15 +12,13 @@ export const generateAccessToken = (userDetails) => {
 };
 
 export const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
-
+  const token = getTokenFromAuthHeader(req.headers)
   if (!token) {
+    
     return res.sendStatus(401);
   }
 
   const result = verifyAccessToken(token);
-
   if (!result.success) {
     return res.status(403).json({ error: result.error });
   }
@@ -30,7 +27,7 @@ export const authenticateToken = (req, res, next) => {
   next();
 };
 
-const verifyAccessToken = (token) => {
+export const verifyAccessToken = (token) => {
   const secret = process.env.JWT_SECRET;
 
   try {
@@ -41,8 +38,7 @@ const verifyAccessToken = (token) => {
   }
 };
 
-export const extractJwtClaims = (authHeader) => {
-  const token = authHeader && authHeader.split(" ")[1];
+export const extractJwtClaims = (token) => {
   try {
     const decoded = jwt.decode(token, { complete: true });
 
@@ -55,3 +51,8 @@ export const extractJwtClaims = (authHeader) => {
     return null;
   }
 };
+
+export const getTokenFromAuthHeader = (headers) => {
+  const authHeader = headers["authorization"];
+  return authHeader && authHeader.split(" ")[1];
+}

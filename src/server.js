@@ -3,6 +3,7 @@ import {
   authenticateToken,
   extractJwtClaims,
   generateAccessToken,
+  getTokenFromAuthHeader,
 } from "./JwtAuth.js";
 import mysql from "mysql";
 import express from "express";
@@ -20,10 +21,10 @@ const port = 9022;
 const logger = pino();
 
 const limiter = rateLimit({
-  windowMs: 60 * 1000,
-  limit: 5,
-  standardHeaders: true,
-  legacyHeaders: false,
+  windowMs: 60 * 1000, // 5 minutes
+  limit: 20, // each IP can make up to 10 requests per `windowsMs` (5 minutes)
+  standardHeaders: true, // add the `RateLimit-*` headers to the response
+  legacyHeaders: false, // remove the `X-RateLimit-*` headers from the response
   message: "Slow down Tommy you're going too fasht",
 });
 
@@ -39,7 +40,6 @@ var con = mysql.createConnection({
   user: process.env.user,
   password: process.env.password,
   database: process.env.database,
-  pepper: process.env.pepper,
 });
 
 con.connect(function (err) {
@@ -99,7 +99,7 @@ app.post("/validateUser", async (req, res) => {
   con.query(hash_db, [req.body.publickey], async (err, rows) => {
     if (err || rows.length == 0) {
       logger.error({ sqlError: err }, "Error retrieving value from database");
-      return res.status(400).json();
+      return res.status(400).send();
     } else {
       if (
         rows.length != 0 &&
@@ -110,14 +110,11 @@ app.post("/validateUser", async (req, res) => {
         //get publickey (might be on frontend)
         res.json({
           message: "Valid user",
-          token: generateAccessToken({
-            user: req.body.user,
-            publicKey: req.body.publicKey,
-          }),
+          token: generateAccessToken(req.body.publickey),
         });
       } else {
         logger.warn(`Invalid login attempt on user ${req.body.user}`);
-        return res.status(400).json();
+        return res.status(400).send();
       }
     }
   });
@@ -126,14 +123,17 @@ app.post("/validateUser", async (req, res) => {
 const upload = multer({ storage: storage });
 
 app.post("/addFile", authenticateToken, upload.single("file"), (req, res) => {
-  const tokenParams = extractJwtClaims(req.headers["authorization"]);
+  const tokenParams = extractJwtClaims(getTokenFromAuthHeader(req.headers));
   if (!req.file) {
+    return res.status(400).json({ error: "No file uploaded" });
+  }
+  if (!req.body.topublickey) {
     return res.status(400).json({ error: "No file uploaded" });
   }
   let sql = `INSERT INTO fileStorage VALUES (?, ?, ?);`;
   con.query(
     sql,
-    [req.file.filename, req.body.topublickey, tokenParams.frompublickey],
+    [req.file.filename, req.body.topublickey, tokenParams.publickey],
     (err, result) => {
       if (err) {
         logger.error({ sqlError: err }, "Error inserting filename");
@@ -151,7 +151,7 @@ app.post("/addFile", authenticateToken, upload.single("file"), (req, res) => {
 });
 
 app.get("/allfiles", authenticateToken, (req, res) => {
-  const tokenParams = extractJwtClaims(req.headers["authorization"]);
+  const tokenParams = extractJwtClaims(getTokenFromAuthHeader(req.headers));
   con.query(
     `SELECT filename from fileStorage WHERE topublickey = ?`,
     [tokenParams.publickey],
@@ -172,8 +172,8 @@ app.get("/allfiles", authenticateToken, (req, res) => {
 
 app.get("/downloadFile/:filename", authenticateToken, (req, res) => {
   const filename = req.params.filename;
-  const filePath = path.join(__dirname, "uploads", filename);
-  const tokenParams = extractJwtClaims(req.headers["authorization"]);
+  const filePath = path.join(__dirname, "../uploads", filename);
+  const tokenParams = extractJwtClaims(getTokenFromAuthHeader(req.headers));
   con.query(
     `SELECT filename from fileStorage WHERE topublickey = ? AND filename = ?`,
     [tokenParams.publickey, filename],
@@ -195,3 +195,4 @@ app.get("/downloadFile/:filename", authenticateToken, (req, res) => {
 app.listen(port, hostname, () => {
   logger.info(`Server Listening on PORT: ${port}`);
 });
+export default server;

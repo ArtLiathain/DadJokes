@@ -10,15 +10,11 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-
+  Lint:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         node-version: [18.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-
     steps:
     - uses: actions/checkout@v4
     - name: Use Node.js ${{ matrix.node-version }}
@@ -26,7 +22,10 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
-    - name: Check Package
-      run: npm ci
+        
+    - name: Packages
+      run: npm i
+      
     - name: Lint
       run: npm run lint
+  
