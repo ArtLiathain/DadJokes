@@ -101,7 +101,6 @@ app.post("/addUser", async function (req, res) {
 });
 
 app.post("/validateUser", async (req, res) => {
-  console.log("HELLo");
   let hash_db = `SELECT password
              FROM users
              WHERE publickey=?;`;
@@ -139,7 +138,6 @@ app.post("/addFile", authenticateToken, upload.single("file"), (req, res) => {
   if (!req.body.topublickey) {
     return res.status(400).json({ error: "No file uploaded" });
   }
-  console.log("ADDFILES", req.body);
   let sql = `INSERT INTO fileStorage VALUES (?, ?, ?, ?, ?, ?);`;
   con.query(
     sql,
@@ -200,7 +198,7 @@ app.get("/downloadFile/:filename", authenticateToken, (req, res) => {
   con.query(
     `SELECT filename from fileStorage WHERE topublickey = ? AND filename = ?`,
     [tokenParams.publickey, filename],
-    (err) => {
+    (err, rows) => {
       if (err || rows.length == 0) {
         logger.error({ sqlError: err }, "Invalid download attempt");
         return res.status(400).json();
@@ -241,7 +239,7 @@ app.delete("/delete/:filename", authenticateToken, async (req, res) => {
   con.query(
     `SELECT filename from fileStorage WHERE topublickey = ? AND filename = ?`,
     [tokenParams.publickey, filename],
-    (rows, err) => {
+    (err, rows) => {
       if (err || rows.length == 0) {
         logger.error({ sqlError: err }, "Invalid delete attempt");
         return res.status(400).json();
