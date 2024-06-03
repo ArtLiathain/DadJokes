@@ -192,7 +192,25 @@ app.get("/downloadFile/:filename", authenticateToken, (req, res) => {
   });
 });
 
-app.listen(port, hostname, () => {
+app.get('/getallusers', authenticateToken, async (req,res) => {
+  con.query(
+    `SELECT username, publickey from users`,
+    (err, rows) => {
+      if (err) {
+        logger.error({ sqlError: err }, "error retrieving filenames");
+        return res.status(400).json({ error: "No files found" });
+      } else {
+        let listOfUsers = [];
+        for (let i = 0; i < rows.length; i++) {
+          listOfUsers.push({username : rows[i].username, publickey : rows[i].publickey});
+        }
+        res.json({ users: listOfUsers });
+      }
+    }
+  );
+})
+
+const server = app.listen(port, hostname, () => {
   logger.info(`Server Listening on PORT: ${port}`);
 });
 export default server;
