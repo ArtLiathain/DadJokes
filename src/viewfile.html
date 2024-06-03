@@ -69,18 +69,11 @@
         });
         const blob = await response.blob();
 
-        let publicKey = file.publicKey;
-        let filename = file.filename;
-        let ivBase64 = file.iv;
-        let authTagBase64 = file.authTag;
-
-
-
         const decryptedText = decryptText(
-          publicKey,
-          ivBase64,
-          blob,
-          authTagBase64);
+                file.publicKey,
+                file.iv,
+                blob,
+                file.authTag);
 
         // create a new blob with the decrypted text
         const decryptedBlob = new Blob([decryptedText], { type: "application/octet-stream" });
@@ -92,7 +85,7 @@
 
         const link = document.createElement("a");
         link.href = url;
-        link.setAttribute("download", filename);
+        link.setAttribute("download", file.filename);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
