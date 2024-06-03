@@ -11,9 +11,9 @@ function encryptText(derivedKey, text) {
     return { iv: iv.toString('base64'), encrypted, authTag };
 }
 
-function decryptText(derivedKey, ivHex, encryptedText, authTagHex) {
-    const iv = Buffer.from(ivHex, 'base64');
-    const authTag = Buffer.from(authTagHex, 'base64');
+function decryptText(derivedKey, ivBase64, encryptedText, authTagBase64) {
+    const iv = Buffer.from(ivBase64, 'base64');
+    const authTag = Buffer.from(authTagBase64, 'base64');
     const decipher = crypto.createDecipheriv('aes-256-gcm', derivedKey, iv);
     decipher.setAuthTag(authTag);
 
