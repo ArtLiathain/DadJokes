@@ -1,152 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="utf-8">
-
+  <head>
+    <meta charset="utf-8" />
 
     <title>Dad Jokes - Files</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="style_view.css">
-</head>
-<body>
-<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet">
-<div class="content">
-    <div class="container">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style_view.css" />
+  </head>
+  <body>
+    <link
+      href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css"
+      rel="stylesheet"
+    />
+    <div class="content">
+      <div class="container">
         <div class="row">
-            <div class="col-12">
-                <div class="card-box">
-                    <div class="row">
-                        <div class="col-lg-6 col-xl-6">
-                            <h4 class="header-title m-b-30">Files</h4>
-                        </div>
-                    </div>
-                    <div class="container">
-                        <div class="row" id="file-container">
-                            <!-- Dynamic content will be inserted here -->
-                        </div>
-                    </div>
-<!--                    <div class="text-center mt-3">-->
-<!--                        <button type="button" class="btn btn-outline-danger w-md waves-effect waves-light"><i class="mdi mdi-refresh"></i> Upload Files</button>-->
-<!--                    </div>-->
-                    <div class="text-center mt-3">
-                        <form>
-                            <input class="btn btn-outline-danger w-md waves-effect waves-light" type="file" id="myfile" name="myfile" multiple><br><br>
-                            <button type="submit" class="btn btn-outline-danger w-md waves-effect waves-light"><i class="mdi mdi-refresh"></i> Upload Files</button>
-                        </form>
-                    </div>
-                    </div>
-
+          <div class="col-12">
+            <div class="card-box">
+              <div class="row">
+                <div class="col-lg-6 col-xl-6">
+                  <h4 class="header-title m-b-30">Files</h4>
+                </div>
+              </div>
+              <div class="container">
+                <div class="row" id="file-container">
+                  <!-- Dynamic content will be inserted here -->
+                </div>
+              </div>
+              <!--                    <div class="text-center mt-3">-->
+              <!--                        <button type="button" class="btn btn-outline-danger w-md waves-effect waves-light"><i class="mdi mdi-refresh"></i> Upload Files</button>-->
+              <!--                    </div>-->
+              <div class="text-center mt-3">
+                <form>
+                  <input
+                    class="btn btn-outline-danger w-md waves-effect waves-light"
+                    type="file"
+                    id="myfile"
+                    name="myfile"
+                    multiple
+                  /><br /><br />
+                  <button
+                    type="submit"
+                    class="btn btn-outline-danger w-md waves-effect waves-light"
+                  >
+                    <i class="mdi mdi-refresh"></i> Upload Files
+                  </button>
+                </form>
+              </div>
             </div>
-
+          </div>
         </div>
-
+      </div>
     </div>
+    <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript">
+      const downloadFile = async (token, filename) => {
+        const response = await fetch(`/downloadfile/${filename}`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
 
-</div>
-<script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
-<script type="text/javascript">
-    document.addEventListener("DOMContentLoaded", function() {
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+
+      document.addEventListener("DOMContentLoaded", async () => {
         // need to get each parameter on request
-        const files = [
-            {
-                name: "invoice_project.pdf",
-                size: "568.8 kb",
-                icon: "pdf",
-                url: "https://coderthemes.com/highdmin/layouts/assets/images/file_icons/pdf.svg"
-            },
-            {
-                name: "Bmpfile.bmp",
-                size: "845.8 mb",
-                icon: "bmp",
-                url: "https://coderthemes.com/highdmin/layouts/assets/images/file_icons/bmp.svg"
-            },
-            {
-                name: "Photoshop_file.ps",
-                size: "684.8 kb",
-                icon: "psd",
-                url: "https://coderthemes.com/highdmin/layouts/assets/images/file_icons/psd.svg"
-            },
-            {
-                name: "Avifile.avi",
-                size: "5.9 mb",
-                icon: "avi",
-                url: "https://coderthemes.com/highdmin/layouts/assets/images/file_icons/avi.svg"
-            },
-            {
-                name: "Cadfile.cad",
-                size: "95.8 mb",
-                icon: "cad",
-                url: "https://coderthemes.com/highdmin/layouts/assets/images/file_icons/cad.svg"
-            },
-            {
-                name: "Mytextfile.txt",
-                size: "568.8 kb",
-                icon: "txt",
-                url: "https://coderthemes.com/highdmin/layouts/assets/images/file_icons/txt.svg"
-            },
-            {
-                name: "Epsfile.eps",
-                size: "568.8 kb",
-                icon: "eps",
-                url: "https://coderthemes.com/highdmin/layouts/assets/images/file_icons/eps.svg"
-            },
-            {
-                name: "Project_file.dll",
-                size: "684.3 kb",
-                icon: "dll",
-                url: "https://coderthemes.com/highdmin/layouts/assets/images/file_icons/dll.svg"
-            },
-            {
-                name: "Website_file.sql",
-                size: "457.8 kb",
-                icon: "sql",
-                url: "https://coderthemes.com/highdmin/layouts/assets/images/file_icons/sql.svg"
-            },
-            {
-                name: "invoice_project.pdf",
-                size: "568.8 kb",
-                icon: "zip",
-                url: "https://coderthemes.com/highdmin/layouts/assets/images/file_icons/zip.svg"
-            },
-            {
-                name: "invoice_project.pdf",
-                size: "568.8 kb",
-                icon: "ps",
-                url: "https://coderthemes.com/highdmin/layouts/assets/images/file_icons/ps.svg"
-            },
-            {
-                name: "invoice_project.pdf",
-                size: "568.8 kb",
-                icon: "png",
-                url: "https://coderthemes.com/highdmin/layouts/assets/images/file_icons/png.svg"
-            }
-        ];
-
+        const token = sessionStorage.getItem(`token ${123456789}`);
+        const response = await fetch("/allfiles", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await response.json();
+        const files = data.files;
         const container = document.getElementById("file-container");
 
-        files.forEach(file => {
-            const fileBox = document.createElement("div");
-            fileBox.className = "col-lg-3 col-xl-2";
+        files.forEach((file) => {
+          const listItem = document.createElement("li");
+          listItem.className =
+            "list-group-item d-flex justify-content-between align-items-center";
 
-            fileBox.innerHTML = `
-            <div class="file-man-box">
-<!--            could add delete file option here-->
-                <a href="#" class="file-close"><i class="fa fa-times-circle"></i></a>
-<!--                take in file extension and add it to "https://coderthemes.com/highdmin/layouts/assets/images/file_icons/{}.svg" -->
-                <div class="file-img-box"><img src="${file.url}" alt="icon"></div>
-                <a href="src/images/file-icon.png" class="file-download" download><i class="fa fa-download"></i></a>
-                <div class="file-man-title">
-                    <h5 class="mb-0 text-overflow">${file.name}</h5>
-                    <p class="mb-0"><small>${file.size}</small></p>
-                </div>
-            </div>
-        `;
+          listItem.innerHTML = `
+                <span>${file}</span>
+                <button onclick="downloadFile('${token}', '${file}')"class="btn btn-outline-primary" >
+                    <i class="fa fa-download"></i> Download
+                </button>
+            `;
 
-            container.appendChild(fileBox);
+          container.appendChild(listItem);
         });
-    });
-</script>
-</body>
+      });
+    </script>
+  </body>
 </html>

@@ -1,33 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <!-- Design by foolishdeveloper.com -->
     <title>Dad Jokes</title>
 
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-<!--    link js-->
+    <link rel="preconnect" href="https://fonts.gstatic.com" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+    />
+    <!--    link js-->
     <script src="server.js"></script>
     <script src="app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap"
+      rel="stylesheet"
+    />
     <!--Stylesheet-->
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-<div class="background">
-    <div class="shape"></div>
-    <div class="shape"></div>
-</div>
-<form>
-    <h3>Login Here</h3>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="background">
+      <div class="shape"></div>
+      <div class="shape"></div>
+    </div>
+    <form>
+      <h3>Login Here</h3>
 
-    <label for="username">Username</label>
-    <input type="text" placeholder="Username" id="username">
+      <label for="username">Username</label>
+      <input type="text" placeholder="Username" id="username" />
 
-    <label for="password">Password</label>
-    <input type="password" placeholder="Password" id="password">
+      <label for="password">Password</label>
+      <input type="password" placeholder="Password" id="password" />
 
-    <button>Log In</button>
-</form>
-</body>
+      <button onclick="handleLogin()">Log In</button>
+    </form>
+
+    <script>
+      const handleLogin = async () => {
+        event.preventDefault();
+        const password = document.getElementById("password").value;
+        const response = await fetch("/validateUser", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ pass: password, publickey: 123456789 }),
+        });
+        const data = await response.json();
+        sessionStorage.setItem(`token ${123456789}`, data.token);
+        const redirectResponse = await fetch("/view", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${data.token}`,
+          },
+        });
+
+        if (redirectResponse.ok) {
+          const html = await redirectResponse.text();
+          document.open();
+          document.write(html);
+          document.close();
+        } else {
+          throw new Error("Failed to fetch the next page");
+        }
+      };
+    </script>
+  </body>
 </html>

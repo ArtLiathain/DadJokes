@@ -7,7 +7,6 @@ document.getElementById('loginForm').addEventListener('submit', function(event) 
 
     // Create the payload
     const payload = {
-        user: username,
         pass: password
     };
 
