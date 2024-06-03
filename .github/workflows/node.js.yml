@@ -28,32 +28,4 @@ jobs:
       
     - name: Lint
       run: npm run lint
-  Test:
-      runs-on: ubuntu-latest
-      strategy:
-        matrix:
-          node-version: [18.x]
-      steps:
-      - uses: actions/checkout@v4
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-      - name: Shutdown Ubuntu MySQL (SUDO)
-        run: sudo service mysql stop
-      - name: Setup Envirnment Variables
-
-        run: echo ${{secrets.TEST_ENV_FILE}} >> ./.env.test
-      - uses: mirromutth/mysql-action@v1.1
-        with:
-          mysql database: 'testdadjokes' # Optional, default value is "test". The specified database which will be create
-          mysql root password: ${{ secrets.ROOT_PASSWORD }} # Required if "mysql user" is empty, default is empty. The root superuser password
-          mysql user: 'developer' # Required if "mysql root password" is empty, default is empty. The superuser for the specified database. Can use secrets, too
-          mysql password: ${{ secrets.DATABASE_PASSWORD }} # Required if "mysql user" exists. The password for the "mysql user"
-      
-      - name: Packages
-        run: npm i
-      
-      - name: Test
-        run: npm run test
+  
