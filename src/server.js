@@ -8,14 +8,13 @@ import {
 import mysql from "mysql";
 import express from "express";
 import multer from "multer";
-import path,{ dirname }from "path";
+import path, { dirname } from "path";
 import pino from "pino";
 import { Level } from "level";
 import { fileURLToPath } from "url";
 import { rateLimit } from "express-rate-limit";
 import argon2 from "argon2";
-import { unlink } from 'node:fs';
-
+import { unlink } from "node:fs";
 
 const hostname = "localhost";
 const port = 9022;
@@ -102,12 +101,13 @@ app.post("/addUser", async function (req, res) {
 });
 
 app.post("/validateUser", async (req, res) => {
+  console.log("HELLo");
   let hash_db = `SELECT password
              FROM users
              WHERE publickey=?;`;
   con.query(hash_db, [req.body.publickey], async (err, rows) => {
     if (err || rows.length == 0) {
-      logger.error({ sqlError: err }, "Error retrieving value from database");
+      logger.error({ sqlError: err }, "Error retreving value from database");
       return res.status(400).send();
     } else {
       if (
@@ -139,7 +139,7 @@ app.post("/addFile", authenticateToken, upload.single("file"), (req, res) => {
   if (!req.body.topublickey) {
     return res.status(400).json({ error: "No file uploaded" });
   }
-  console.log("ADDFILES",req.body)
+  console.log("ADDFILES", req.body);
   let sql = `INSERT INTO fileStorage VALUES (?, ?, ?, ?, ?, ?);`;
   con.query(
     sql,
@@ -181,10 +181,10 @@ app.get("/allfiles", authenticateToken, (req, res) => {
         for (let i = 0; i < rows.length; i++) {
           listOfFiles.push({
             filename: rows[i].filename,
-            publickey : rows[i].frompublickey,
+            publickey: rows[i].frompublickey,
             iv: rows[i].iv,
             authTag: rows[i].authTag,
-            sharedText: rows[i].sharedText
+            sharedText: rows[i].sharedText,
           });
         }
         res.json({ files: listOfFiles });
@@ -192,8 +192,6 @@ app.get("/allfiles", authenticateToken, (req, res) => {
     }
   );
 });
-
-app.get('')
 
 app.get("/downloadFile/:filename", authenticateToken, (req, res) => {
   const filename = req.params.filename;
@@ -203,22 +201,19 @@ app.get("/downloadFile/:filename", authenticateToken, (req, res) => {
     `SELECT filename from fileStorage WHERE topublickey = ? AND filename = ?`,
     [tokenParams.publickey, filename],
     (err) => {
-      if (err) {
+      if (err || rows.length == 0) {
         logger.error({ sqlError: err }, "Invalid download attempt");
         return res.status(400).json();
-      }
-      else {
+      } else {
         res.download(filePath, (err) => {
           if (err) {
             logger.error("Error downloading the file: ", err);
             res.status(404).send("File not found");
           }
-          
         });
       }
     }
   );
-  
 });
 
 app.get("/getallusers", authenticateToken, async (req, res) => {
@@ -239,28 +234,34 @@ app.get("/getallusers", authenticateToken, async (req, res) => {
   });
 });
 
-app.delete('/delete/:filename', authenticateToken, async (req, res) => {
+app.delete("/delete/:filename", authenticateToken, async (req, res) => {
   const filename = req.params.filename;
   const filePath = path.join(__dirname, "../uploads", filename);
   const tokenParams = extractJwtClaims(getTokenFromAuthHeader(req.headers));
   con.query(
     `SELECT filename from fileStorage WHERE topublickey = ? AND filename = ?`,
     [tokenParams.publickey, filename],
-    (err) => {
-      if (err) {
-        logger.error({ sqlError: err }, "Invalid download attempt");
+    (rows, err) => {
+      if (err || rows.length == 0) {
+        logger.error({ sqlError: err }, "Invalid delete attempt");
         return res.status(400).json();
+      } else {
+        unlink(filePath, (err) => {
+          if (err) throw err;
+          logger.info(`${filename} was deleted`);
+        });
       }
     }
   );
-  unlink(filePath, (err) => {
-    if (err) throw err;
-    logger.info(`${filename} was deleted`);
-  }); 
-  res.send("File deleted")
 
-
-})
+  con.query("DELETE FROM fileStorage WHERE filename=?", [filename], (err) => {
+    if (err) {
+      logger.error({ sqlError: err }, "Invalid download attempt");
+      return res.status(400).json();
+    }
+  });
+  res.send("File deleted");
+});
 
 const server = app.listen(port, hostname, () => {
   logger.info(`Server Listening on PORT: ${port}`);
