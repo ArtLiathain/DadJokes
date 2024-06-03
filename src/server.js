@@ -74,7 +74,7 @@ app.get('/view', (res, req) => {
 
 
 app.post("/addUser", async function (req, res) {
-  if (req.body.pass && req.body.publicKey.isInteger()) {
+  if (req.body.pass) {
     try {
       const hash_result = await argon2.hash(req.body.pass, {
         secret: Buffer.from(process.env.pepper),
