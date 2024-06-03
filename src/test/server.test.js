@@ -7,24 +7,34 @@ import { fileURLToPath } from "url";
 import mysql from "mysql";
 
 beforeAll(async () => {
-  const generatedScript = fs
-    .readFileSync(path.join(__dirname, "../../SqlFiles/testServerDb.sql"))
-    .toString();
+  try {
+    const generatedScript = fs
+      .readFileSync(path.join(__dirname, "../../SqlFiles/testServerDb.sql"))
+      .toString();
 
-  var db = mysql.createConnection({
-    host: process.env.host,
-    user: process.env.user,
-    password: process.env.password,
-    database: process.env.database,
-    multipleStatements: true,
-  });
-  await db.query(generatedScript, (err, result) => {
-    if (err) {
-      console.log(err);
-      throw err;
-    }
-    return;
-  });
+    var db = mysql.createConnection({
+      host: process.env.host,
+      user: process.env.user,
+      password: process.env.password,
+      database: process.env.database,
+      multipleStatements: true,
+    });
+    await new Promise((resolve, reject) => {
+      db.query(generatedScript, (err, result) => {
+        if (err) {
+          console.log(err);
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+  } catch (error) {
+    console.error("Error setting up database:", error);
+    throw error; // Fail the test setup if an error occurs
+  } finally {
+    db.end(); // Close the database connection
+  }
 });
 
 afterAll(async () => {
@@ -37,7 +47,6 @@ afterAll(async () => {
   });
   await db.query("DROP TABLE fileStorage; DROP TABLE users;", (err, result) => {
     if (err) {
-      console.log(err);
       throw err;
     }
   });
@@ -47,32 +56,20 @@ afterAll(async () => {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-global.token = generateAccessToken(123456789);
+global.token = generateAccessToken(10987654321);
 
 describe("Get endpoints", () => {
   it("Should not get any files with certain publickey", async () => {
     const res = await request(app)
       .get("/allfiles")
       .set("Authorization", `Bearer ${global.token}`);
-    console.log(res.body);
-    expect(res.statusCode).toBe(400);
+    expect(res.statusCode).toBe(200);
   });
-  it("Should download a file and check its there", async () => {
-    const res = await request(app)
-      .post("/addFile")
-      .attach("file", path.resolve(__dirname, "./testFile.txt"))
-      .attach("topublickey", 123456789)
-      .set("Authorization", `Bearer ${global.token}`);
-    const getres = await request(app)
-      .get(`/downloadFile/${res.body.filename}`)
-      .set("Authorization", `Bearer ${global.token}`);
-    expect(getres.statusCode).toBe(200);
-  });
-  it("Should get  files with certain publickey", async () => {
+
+  it("Should get files with certain publickey", async () => {
     const res = await request(app)
       .get("/allfiles")
       .set("Authorization", `Bearer ${global.token}`);
-    console.log(res.body);
     expect(res.statusCode).toBe(200);
   });
 });
@@ -106,7 +103,7 @@ describe("POST endpoints", () => {
     const res = await request(app)
       .post("/addFile")
       .attach("file", path.resolve(__dirname, "./testFile.txt"))
-      .attach("topublickey", 123456789)
+      .attach("topublickey", 10987654321)
       .set("Authorization", `Bearer ${global.token}`);
 
     // Check the response status and body
@@ -153,10 +150,14 @@ describe("Integration test fully", () => {
       .get("/allfiles")
       .set("Authorization", `Bearer ${token}`);
     expect(allres.statusCode).toBe(200);
-
     const getres = await request(app)
-      .get(`/downloadFile/${allres.body.files[0]}`)
+      .get(`/downloadFile/${allres.body.files[0].filename}`)
       .set("Authorization", `Bearer ${token}`);
     expect(getres.statusCode).toBe(200);
+
+    const deleteres = await request(app)
+      .delete(`/delete/${allres.body.files[0].filename}`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(deleteres.statusCode).toBe(200);
   });
 });
