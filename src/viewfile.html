@@ -58,16 +58,37 @@
     </div>
     <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="./aesGcm.js"></script>
     <script type="text/javascript">
-      const downloadFile = async (token, filename) => {
-        const response = await fetch(`/downloadfile/${filename}`, {
+      const downloadFile = async (token, file) => {
+        const response = await fetch(`/downloadfile/${file.filename}`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
         const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
+
+        let publicKey = file.publicKey;
+        let filename = file.filename;
+        let ivBase64 = file.iv;
+        let authTagBase64 = file.authTag;
+
+
+
+        const decryptedText = decryptText(
+          publicKey,
+          ivBase64,
+          blob,
+          authTagBase64);
+
+        // create a new blob with the decrypted text
+        const decryptedBlob = new Blob([decryptedText], { type: "application/octet-stream" });
+
+        // create a new URL for the blob
+
+
+        const url = window.URL.createObjectURL(decryptedBlob);
 
         const link = document.createElement("a");
         link.href = url;
