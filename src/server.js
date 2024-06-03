@@ -16,7 +16,7 @@ import { rateLimit } from "express-rate-limit";
 import argon2 from "argon2";
 import { unlink } from "node:fs";
 
-const hostname = "localhost";
+const hostname = process.env.domain || "localhost";
 const port = 9022;
 const logger = pino();
 
