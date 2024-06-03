@@ -17,14 +17,14 @@
       rel="stylesheet"
     />
     <!--Stylesheet-->
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
     <div class="background">
       <div class="shape"></div>
       <div class="shape"></div>
     </div>
-    <form>
+    <form id="loginForm">
       <h3>Login Here</h3>
 
       <label for="username">Username</label>
@@ -34,6 +34,20 @@
       <input type="password" placeholder="Password" id="password" />
 
       <button onclick="handleLogin()">Log In</button>
+      <a class="signup" onclick="handleToSignUp()">Sign Up</a>
+    </form>
+
+    <form id="signUpForm" class="sign hidden">
+      <h3>Sign Up</h3>
+
+      <label for="username">Username</label>
+      <input type="text" placeholder="Username" id="usernameSign" />
+
+      <label for="password">Password</label>
+      <input type="password" placeholder="Password" id="passwordSign" />
+
+      <button  onclick="handleSignUp()">Sign Up</button>
+        <a class="signup" onclick="handleToLogIn()">Log In</a>
     </form>
 
     <script>
@@ -64,6 +78,56 @@
         } else {
           throw new Error("Failed to fetch the next page");
         }
+      };
+
+      const handleSignUp = async () => {
+        event.preventDefault();
+        const password = document.getElementById("passwordSign").value;
+        const username = document.getElementById("usernameSign").value;
+        const response = await fetch("/addUser", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ pass: password, user: username, publickey: 123456789 }),
+        });
+        const data = await response.json();
+        sessionStorage.setItem(`token ${123456789}`, data.token);
+        const redirectResponse = await fetch("/view", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${data.token}`,
+          },
+        });
+
+        if (redirectResponse.ok) {
+          const html = await redirectResponse.text();
+          document.open();
+          document.write(html);
+          document.close();
+          alert("User added successfully - Go to Login");
+        } else {
+          throw new Error("Failed to fetch the next page");
+        }
+      };
+
+
+      const handleToSignUp = async () => {
+
+        // add hidden class to login form
+        document.getElementById("loginForm").classList.add("hidden");
+        // remove hidden class from sign up form
+        document.getElementById("signUpForm").classList.remove("hidden");
+
+      };
+
+      const handleToLogIn = async () => {
+
+        // add hidden class to login form
+        document.getElementById("signUpForm").classList.add("hidden");
+        // remove hidden class from sign up form
+        document.getElementById("loginForm").classList.remove("hidden")
+
       };
     </script>
   </body>
