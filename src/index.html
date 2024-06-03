@@ -12,6 +12,7 @@
     <!--    link js-->
     <script src="server.js"></script>
     <script src="app.js"></script>
+    <script src="keyGen.js"></script>
     <link
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap"
       rel="stylesheet"
@@ -49,9 +50,9 @@
       <button  onclick="handleSignUp()">Sign Up</button>
         <a class="signup" onclick="handleToLogIn()">Log In</a>
     </form>
-
-    <script>
-      const handleLogin = async () => {
+    <script type="module">
+        import { keyStoreLevelDB } from './keyGen.js';
+        const handleLogin = async () => {
         event.preventDefault();
         const password = document.getElementById("password").value;
         const response = await fetch("/validateUser", {
@@ -84,15 +85,22 @@
         event.preventDefault();
         const password = document.getElementById("passwordSign").value;
         const username = document.getElementById("usernameSign").value;
+        // const publickey = 12345678910; 
+        console.log("Got here");
+        const publicKey = await keyStoreLevelDB(username);
+        console.log(publicKey);
+        // const publickey = await db.get(username);
+        // call function to generate key and add to levelDB 
+        // grab from levelDB
         const response = await fetch("/addUser", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ pass: password, user: username, publickey: 123456789 }),
+          body: JSON.stringify({ pass: password, user: username, publickey: publickey }),
         });
         const data = await response.json();
-        sessionStorage.setItem(`token ${123456789}`, data.token);
+        sessionStorage.setItem(`token ${publickey}`, data.token);
         const redirectResponse = await fetch("/view", {
           method: "GET",
           headers: {

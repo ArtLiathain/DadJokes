@@ -1,12 +1,14 @@
 import crypto from "crypto";
+import server from "./server";
 
-export const keyStoreLevelDB = async (db) => {
+export async function keyStoreLevelDB(username){
   const ecdh = crypto.createECDH("secp256k1");
   const keys = ecdh.generateKeys();
   const publicKey = keys.getPublicKey("base64");
+  const db = server.db;
   try {
     
-    await db.put(`${publicKey} Public`, publicKey);
+    await db.put(`${username} Public`, publicKey);
     await db.put(`${publicKey} Private`, keys.getPrivateKey("base64"));
     console.log("Successfully put Keys");
   } catch (error) {
@@ -17,6 +19,7 @@ export const keyStoreLevelDB = async (db) => {
       console.log("Closed LevelDB");
     }
   }
+  return publicKey;
 };
 // var getPublicKey = await db.get("Username Public");
 //     var getPrivateKey = await db.get("Username Private");
