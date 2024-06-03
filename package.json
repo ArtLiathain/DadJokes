@@ -35,7 +35,7 @@
   "scripts": {
     "lint": "eslint 'src/**/*.js'",
     "dev": "NODE_ENV=production node src/server.js",
-    "test": "NODE_ENV=test node --experimental-vm-modules node_modules/.bin/jest --config=/home/art/Developer/DadJokes/jest.config.js"
+    "test": "NODE_ENV=test node --experimental-vm-modules node_modules/.bin/jest --config=./jest.config.js"
   },
   "jest": {
     "transform": {}
