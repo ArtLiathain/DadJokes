@@ -37,7 +37,6 @@ afterAll(async () => {
   });
   await db.query("DROP TABLE fileStorage; DROP TABLE users;", (err, result) => {
     if (err) {
-      console.log(err);
       throw err;
     }
   });
@@ -54,26 +53,7 @@ describe("Get endpoints", () => {
     const res = await request(app)
       .get("/allfiles")
       .set("Authorization", `Bearer ${global.token}`);
-    console.log(res.body);
     expect(res.statusCode).toBe(400);
-  });
-  it("Should download a file and check its there", async () => {
-    const res = await request(app)
-      .post("/addFile")
-      .attach("file", path.resolve(__dirname, "./testFile.txt"))
-      .attach("topublickey", 123456789)
-      .set("Authorization", `Bearer ${global.token}`);
-    const getres = await request(app)
-      .get(`/downloadFile/${res.body.filename}`)
-      .set("Authorization", `Bearer ${global.token}`);
-    expect(getres.statusCode).toBe(200);
-  });
-  it("Should get  files with certain publickey", async () => {
-    const res = await request(app)
-      .get("/allfiles")
-      .set("Authorization", `Bearer ${global.token}`);
-    console.log(res.body);
-    expect(res.statusCode).toBe(200);
   });
 });
 
@@ -155,11 +135,13 @@ describe("Integration test fully", () => {
     expect(allres.statusCode).toBe(200);
 
     const getres = await request(app)
-      .get(`/downloadFile/${allres.body.files[0].filename}`)
+      .get(`/downloadFile/${fileres.body.filename}`)
       .set("Authorization", `Bearer ${token}`);
     expect(getres.statusCode).toBe(200);
 
     const deleteres = await request(app)
-    .delete(`/delete/${}`)
+      .delete(`/delete/${allres.body.files[0].filename}`)
+      .set("Authorization", `Bearer ${token}`);
+    expect(deleteres.statusCode).toBe(200);
   });
 });

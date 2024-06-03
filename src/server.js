@@ -139,6 +139,7 @@ app.post("/addFile", authenticateToken, upload.single("file"), (req, res) => {
   if (!req.body.topublickey) {
     return res.status(400).json({ error: "No file uploaded" });
   }
+  console.log("ADDFILES",req.body)
   let sql = `INSERT INTO fileStorage VALUES (?, ?, ?, ?, ?, ?);`;
   con.query(
     sql,
@@ -192,6 +193,8 @@ app.get("/allfiles", authenticateToken, (req, res) => {
   );
 });
 
+app.get('')
+
 app.get("/downloadFile/:filename", authenticateToken, (req, res) => {
   const filename = req.params.filename;
   const filePath = path.join(__dirname, "../uploads", filename);
@@ -204,14 +207,18 @@ app.get("/downloadFile/:filename", authenticateToken, (req, res) => {
         logger.error({ sqlError: err }, "Invalid download attempt");
         return res.status(400).json();
       }
+      else {
+        res.download(filePath, (err) => {
+          if (err) {
+            logger.error("Error downloading the file: ", err);
+            res.status(404).send("File not found");
+          }
+          
+        });
+      }
     }
   );
-  res.download(filePath, (err) => {
-    if (err) {
-      logger.error("Error downloading the file: ", err);
-      res.status(404).send("File not found");
-    }
-  });
+  
 });
 
 app.get("/getallusers", authenticateToken, async (req, res) => {
@@ -248,7 +255,7 @@ app.delete('/delete/:filename', authenticateToken, async (req, res) => {
   );
   unlink(filePath, (err) => {
     if (err) throw err;
-    console.log(`${filename} was deleted`);
+    logger.info(`${filename} was deleted`);
   }); 
   res.send("File deleted")
 

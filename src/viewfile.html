@@ -59,8 +59,8 @@
     <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
     <script type="text/javascript">
-      const downloadFile = async (token, filename) => {
-        const response = await fetch(`/downloadfile/${filename}`, {
+      const downloadFile = async (token, file) => {
+        const response = await fetch(`/downloadfile/${file.filename}`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -98,7 +98,7 @@
 
           listItem.innerHTML = `
                 <span>${file.filename}</span>
-                <button onclick="downloadFile('${token}', '${file.filename}')"class="btn btn-outline-primary" >
+                <button onclick="downloadFile('${token}', '${file}')"class="btn btn-outline-primary" >
                     <i class="fa fa-download"></i> Download
                 </button>
             `;
