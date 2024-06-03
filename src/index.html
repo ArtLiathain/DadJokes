@@ -11,7 +11,7 @@
     />
     <!--    link js-->
     <script src="server.js"></script>
-    <script src="app.js"></script>
+<!--    <script src="app.js"></script>-->
     <link
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap"
       rel="stylesheet"
@@ -101,10 +101,6 @@
         });
 
         if (redirectResponse.ok) {
-          const html = await redirectResponse.text();
-          document.open();
-          document.write(html);
-          document.close();
           alert("User added successfully - Go to Login");
         } else {
           throw new Error("Failed to fetch the next page");
