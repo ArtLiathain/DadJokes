@@ -63,6 +63,16 @@ const storage = multer.diskStorage({
   },
 });
 
+app.get('/', (res, req) => {
+  res.res.sendFile(path.join(__dirname, 'index.html'))
+})
+
+app.get('/view', (res, req) => {
+  res.res.sendFile(path.join(__dirname, 'viewfile.html'))
+})
+
+
+
 app.post("/addUser", async function (req, res) {
   if (req.body.pass && req.body.publicKey.isInteger()) {
     try {
@@ -93,6 +103,7 @@ app.post("/addUser", async function (req, res) {
 });
 
 app.post("/validateUser", async (req, res) => {
+  console.log(req.body)
   let hash_db = `SELECT password
              FROM users
              WHERE publickey=?;`;

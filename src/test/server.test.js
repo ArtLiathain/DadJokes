@@ -82,14 +82,14 @@ describe("POST endpoints", () => {
     const res = await request(app).post("/addUser").send({
       user: "Tommy",
       pass: "test is cool",
-      publickey: 1234556789,
+      publickey: 10987654321,
     });
     expect(res.statusCode).toEqual(200);
   });
   it("Should validate a user", async () => {
     const res = await request(app).post("/validateUser").send({
       pass: "test is cool",
-      publickey: 1234556789,
+      publickey: 10987654321,
     });
     expect(res.statusCode).toEqual(200);
     expect(verifyAccessToken(res.body.token).success).toEqual(true);
@@ -97,7 +97,7 @@ describe("POST endpoints", () => {
   it("Should fail to validate a user", async () => {
     const res = await request(app).post("/validateUser").send({
       pass: "test isn't cool",
-      publickey: 1234556789,
+      publickey: 10987654321,
     });
     expect(res.statusCode).toEqual(400);
   });
