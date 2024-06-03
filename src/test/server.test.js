@@ -155,8 +155,11 @@ describe("Integration test fully", () => {
     expect(allres.statusCode).toBe(200);
 
     const getres = await request(app)
-      .get(`/downloadFile/${allres.body.files[0]}`)
+      .get(`/downloadFile/${allres.body.files[0].filename}`)
       .set("Authorization", `Bearer ${token}`);
     expect(getres.statusCode).toBe(200);
+
+    const deleteres = await request(app)
+    .delete(`/delete/${}`)
   });
 });
