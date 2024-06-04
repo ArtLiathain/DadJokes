@@ -169,12 +169,13 @@
       };
 
       document.addEventListener("DOMContentLoaded", async () => {
-          const token = sessionStorage.getItem(`token ${123456789}`);
+        const token = sessionStorage.getItem(`token ${123456789}`);
+        try {
           const response = await fetch("/getallusers", {
-          method: "GET",
-          headers: {
+            method: "GET",
+            headers: {
               Authorization: `Bearer ${token}`,
-          },
+            },
           });
           const data = await response.json();
           const users = data.users;
@@ -186,6 +187,10 @@
             listItem.innerHTML = user.username;
             container.appendChild(listItem);
           });
+        }catch (error) {
+          console.error("Error:", error);
+          alert("Error getting users");
+        }
       });
 
     // on upload form submit event
