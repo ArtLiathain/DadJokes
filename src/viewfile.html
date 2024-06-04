@@ -104,7 +104,7 @@
               <!--                        <button type="button" class="btn btn-outline-danger w-md waves-effect waves-light"><i class="mdi mdi-refresh"></i> Upload Files</button>-->
               <!--                    </div>-->
               <div class="text-center mt-3">
-                <form>
+                <form id="uploadForm">
                   <input
                     class="btn btn-outline-danger w-md waves-effect waves-light"
                     type="file"
@@ -112,6 +112,12 @@
                     name="myfile"
                     multiple
                   /><br /><br />
+<!--                  need to dynamically generate these -->
+                  <label for="users">Choose a user:</label>
+                  <select name="users" id="users">
+                    <option value="Template User">Template User</option>
+                  </select>
+                  <br>
                   <button
                     type="submit"
                     class="btn btn-outline-danger w-md waves-effect waves-light"
@@ -127,16 +133,10 @@
     </div>
     <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="./aesGcm.js"></script>
     <script type="text/javascript">
-      const downloadFile = async (
-        token,
-        filename,
-        publickey,
-        iv,
-        authTag,
-        sharedText
-      ) => {
-        const response = await fetch(`/downloadfile/${filename}`, {
+      const downloadFile = async (token, file) => {
+        const response = await fetch(`/downloadfile/${file.filename}`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -144,24 +144,94 @@
         });
         const blob = await response.blob();
 
-        const url = window.URL.createObjectURL(blob);
+        // decryptText(derivedKey, ivBase64, encryptedText, authTagBase64);
+
+        const decryptedText = decryptText(
+                file.publicKey,
+                file.iv,
+                blob,
+                file.authTag);
+
+        // create a new blob with the decrypted text
+        const decryptedBlob = new Blob([decryptedText], { type: "application/octet-stream" });
+
+        // create a new URL for the blob
+
+
+        const url = window.URL.createObjectURL(decryptedBlob);
 
         const link = document.createElement("a");
         link.href = url;
-        link.setAttribute("download", filename);
+        link.setAttribute("download", file.filename);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
       };
 
-      const deleteFile = async (token, filename) => {
-        const response = await fetch(`/delete/${filename}`, {
-          method: "DELETE",
+      document.addEventListener("DOMContentLoaded", async () => {
+          const token = sessionStorage.getItem(`token ${123456789}`);
+          const response = await fetch("/getallusers", {
+          method: "GET",
           headers: {
-            Authorization: `Bearer ${token}`,
+              Authorization: `Bearer ${token}`,
           },
-        });
-      };
+          });
+          const data = await response.json();
+          const users = data.users;
+          const container = document.getElementById("users");
+
+          users.forEach((user) => {
+            const listItem = document.createElement("option");
+            listItem.value = user.publickey;
+            listItem.innerHTML = user.username;
+            container.appendChild(listItem);
+          });
+      });
+
+    // on upload form submit event
+      $("#uploadForm").submit(async (event) => {
+        event.preventDefault();
+        const token = sessionStorage.getItem(`token ${123456789}`);
+        const fileInput = document.getElementById("myfile");
+        const files = fileInput.files;
+        const formData = new FormData();
+
+        // Add file(s) to formData
+        for (let i = 0; i < files.length; i++) {
+          formData.append("myfile", files[i]);
+        }
+
+        let user = document.getElementById("users");
+
+        // Add other required fields to formData
+
+        // need to make these correct
+        formData.append("topublickey", user);
+        formData.append("iv", "your_iv_value");
+        formData.append("authHeader", "your_authHeader_value");
+        formData.append("sharedText", "your_sharedText_value");
+
+        try {
+          const response = await fetch("/addFile", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+          });
+
+          const data = await response.json();
+          if (data.success) {
+            alert("Files uploaded successfully");
+          } else {
+            alert("Error uploading files");
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          alert("Error uploading files");
+        }
+      });
+
 
       document.addEventListener("DOMContentLoaded", async () => {
         // need to get each parameter on request
@@ -174,21 +244,18 @@
         });
         const data = await response.json();
         const files = data.files;
-        console.log(files);
         const container = document.getElementById("file-container");
 
         files.forEach((file) => {
           const listItem = document.createElement("li");
-          console.log(file);
           listItem.className =
             "list-group-item d-flex justify-content-between align-items-center";
 
           listItem.innerHTML = `
-                <span>${file.filename}</span>
-                <button onclick="downloadFile('${token}', '${file.filename}', '${file.publickey}', '${file.iv}', '${file.authTag}', '${file.sharedText}')"class="btn btn-outline-primary" >
+                <span>${file}</span>
+                <button onclick="downloadFile('${token}', '${file}')"class="btn btn-outline-primary" >
                     <i class="fa fa-download"></i> Download
                 </button>
-                <button onclick="deleteFile('${token}', '${file.filename}')">Delete File</button>
             `;
 
           container.appendChild(listItem);
