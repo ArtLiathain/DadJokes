@@ -155,18 +155,8 @@
         });
         const blob = await response.blob();
 
-        // decryptText(derivedKey, ivBase64, encryptedText, authTagBase64);
 
-        const decryptedText = decryptText(
-                publickey,
-                iv,
-                blob,
-                authTag);
-
-        // create a new blob with the decrypted text
-        const decryptedBlob = new Blob([decryptedText], { type: "application/octet-stream" });
-
-        const url = window.URL.createObjectURL(decryptedBlob);
+        const url = window.URL.createObjectURL(blob);
 
         const link = document.createElement("a");
         link.href = url;
