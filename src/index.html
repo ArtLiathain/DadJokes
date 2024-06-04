@@ -219,10 +219,8 @@ async function openOrCreatePubPrivateKeyDB() {
           console.error("Error adding user to DB:", event.target.error);
         };
       }
-      // Function to retrieve a user's public key from the DB
-      
 
-      function retrieveUserPublicKeyFromDB(db, user) {
+      async function retrieveUserPublicKeyFromDB(db, user) {
         const transaction = db.transaction(["pub_privatekeys"], "readonly");
         const objectStore = transaction.objectStore("pub_privatekeys");
         const index = objectStore.index("user");
@@ -230,7 +228,12 @@ async function openOrCreatePubPrivateKeyDB() {
         const request = index.get(user);
 
         request.onsuccess = (event) => {
-          console.log("User found:", event.target.result);
+            if (event.target.result) {
+            console.log("User found:", event.target.result.publickey);
+            resolve(event.target.result.publickey);
+          } else {
+            resolve(null);  
+          }
         };
 
         request.onerror = (event) => {
@@ -244,17 +247,18 @@ async function openOrCreatePubPrivateKeyDB() {
         event.preventDefault();
         const username = document.getElementById("username").value;
         const db = await openOrCreatePubPrivateKeyDB();
-        await retrieveUserPublicKeyFromDB(db, username);
+        const publicKey = await retrieveUserPublicKeyFromDB(db, username);
+        console.log("The Public Key", publicKey);
         const password = document.getElementById("password").value;
         const response = await fetch("/validateUser", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ pass: password, publickey: 123456789 }),
+          body: JSON.stringify({ pass: password, publickey: publicKey }),
         });
         const data = await response.json();
-        sessionStorage.setItem(`token ${123456789}`, data.token);
+        sessionStorage.setItem(`token ${publicKey}`, data.token);
         const redirectResponse = await fetch("/view", {
           method: "GET",
           headers: {
@@ -277,8 +281,7 @@ async function openOrCreatePubPrivateKeyDB() {
         const password = document.getElementById("passwordSign").value;
         const username = document.getElementById("usernameSign").value;
 
-        // const publickey = 123456789; 
-        // const publicKey = await keyStoreLevelDB(username);
+
         
         const crypto = window.crypto.subtle;
         const keys = await crypto.generateKey(
@@ -309,7 +312,7 @@ async function openOrCreatePubPrivateKeyDB() {
         console.log("Public Key (Base64): ", publicKeyBase64);  
         console.log("Private Key (Base64): ", privateKeyBase64);
 
-        // const db = server.db;
+
         const db = await openOrCreatePubPrivateKeyDB();
 
         await addUserToDB(db, {
