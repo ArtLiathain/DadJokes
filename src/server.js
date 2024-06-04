@@ -52,7 +52,7 @@ con.connect(function (err) {
 
 const app = express();
 app.use(express.json());
-app.set('trust proxy', 1);
+app.set("trust proxy", 1);
 app.use(limiter);
 
 const storage = multer.diskStorage({
@@ -73,35 +73,37 @@ app.get("/view", (res, req) => {
 });
 
 app.post("/addUser", async function (req, res) {
-  if (req.body.pass) {
-    try {
-      const hash_result = await argon2.hash(req.body.pass, {
-        secret: Buffer.from(process.env.pepper),
-      });
-      let sql = "INSERT INTO users VALUES (?, ?, ?)";
-      con.query(
-        sql,
-        [req.body.publickey, req.body.user, hash_result],
-        function (err, result) {
-          if (err) {
-            logger.error({ sqlError: err }, "Error adding value to database");
-            return res.status(400).send();
-          }
-          // Add new publickey
-          logger.info(`Inserted new user ${req.body.user}`);
-          res.send({ message: "Successfully added user" });
+  if ((!req.body.pass, !req.body.publickey, !req.body.user)) {
+    return res.status(400).send();
+  }
+  try {
+    const hash_result = await argon2.hash(req.body.pass, {
+      secret: Buffer.from(process.env.pepper),
+    });
+    let sql = "INSERT INTO users VALUES (?, ?, ?)";
+    con.query(
+      sql,
+      [req.body.publickey, req.body.user, hash_result],
+      function (err, result) {
+        if (err) {
+          logger.error({ sqlError: err }, "Error adding value to database");
+          return res.status(400).send();
         }
-      );
-    } catch (err) {
-      logger.error({ Error: err }, "Error creating user password");
-      res.status(500).send();
-    }
-  } else {
-    res.status(400).send();
+        // Add new publickey
+        logger.info(`Inserted new user ${req.body.user}`);
+        res.send({ message: "Successfully added user" });
+      }
+    );
+  } catch (err) {
+    logger.error({ Error: err }, "Error creating user password");
+    res.status(500).send();
   }
 });
 
 app.post("/validateUser", async (req, res) => {
+  if ((!req.body.pass, !req.body.publickey)) {
+    return res.status(400).send();
+  }
   let hash_db = `SELECT password
              FROM users
              WHERE publickey=?;`;
@@ -136,8 +138,13 @@ app.post("/addFile", authenticateToken, upload.single("file"), (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }
-  if (!req.body.topublickey) {
-    return res.status(400).json({ error: "No file uploaded" });
+  if (
+    (!req.body.topublickey,
+    !req.body.iv,
+    !req.body.authHeader,
+    !req.body.sharedText)
+  ) {
+    return res.status(400).send();
   }
   let sql = `INSERT INTO fileStorage VALUES (?, ?, ?, ?, ?, ?);`;
   con.query(
