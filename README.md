@@ -36,6 +36,10 @@ GRANT ALL PRIVILEGES ON . TO 'sqluser'@'%';
 
 FLUSH PRIVILEGES;
 
+CREATE DATABASE dadjokes;
+
+mysql -u sqluser -p dadjokes < ./SqlFiles/testdatabase.sql
+
 #### Run Command:
 
 npm run dev
