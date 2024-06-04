@@ -8,15 +8,15 @@ import {
 import mysql from "mysql";
 import express from "express";
 import multer from "multer";
-import path from "path";
+import path, { dirname } from "path";
 import pino from "pino";
 import { Level } from "level";
 import { fileURLToPath } from "url";
-import { dirname } from "path";
 import { rateLimit } from "express-rate-limit";
 import argon2 from "argon2";
+import { unlink } from "node:fs";
 
-const hostname = "localhost";
+const hostname = process.env.domainname || "localhost";
 const port = 9022;
 const logger = pino();
 
@@ -52,6 +52,7 @@ con.connect(function (err) {
 
 const app = express();
 app.use(express.json());
+app.set('trust proxy', 1);
 app.use(limiter);
 
 const storage = multer.diskStorage({
@@ -63,15 +64,13 @@ const storage = multer.diskStorage({
   },
 });
 
-app.get('/', (res, req) => {
-  res.res.sendFile(path.join(__dirname, 'index.html'))
-})
+app.get("/", (res, req) => {
+  res.res.sendFile(path.join(__dirname, "index.html"));
+});
 
-app.get('/view', (res, req) => {
-  res.res.sendFile(path.join(__dirname, 'viewfile.html'))
-})
-
-
+app.get("/view", (res, req) => {
+  res.res.sendFile(path.join(__dirname, "viewfile.html"));
+});
 
 app.post("/addUser", async function (req, res) {
   if (req.body.pass) {
@@ -103,13 +102,12 @@ app.post("/addUser", async function (req, res) {
 });
 
 app.post("/validateUser", async (req, res) => {
-  console.log(req.body)
   let hash_db = `SELECT password
              FROM users
              WHERE publickey=?;`;
   con.query(hash_db, [req.body.publickey], async (err, rows) => {
     if (err || rows.length == 0) {
-      logger.error({ sqlError: err }, "Error retrieving value from database");
+      logger.error({ sqlError: err }, "Error retreving value from database");
       return res.status(400).send();
     } else {
       if (
@@ -118,7 +116,7 @@ app.post("/validateUser", async (req, res) => {
           secret: Buffer.from(process.env.pepper),
         }))
       ) {
-        //get publickey (might be on frontend)
+        logger.info(`Validated user ${req.body.publickey}`);
         res.json({
           message: "Valid user",
           token: generateAccessToken(req.body.publickey),
@@ -141,10 +139,17 @@ app.post("/addFile", authenticateToken, upload.single("file"), (req, res) => {
   if (!req.body.topublickey) {
     return res.status(400).json({ error: "No file uploaded" });
   }
-  let sql = `INSERT INTO fileStorage VALUES (?, ?, ?);`;
+  let sql = `INSERT INTO fileStorage VALUES (?, ?, ?, ?, ?, ?);`;
   con.query(
     sql,
-    [req.file.filename, req.body.topublickey, tokenParams.publickey],
+    [
+      req.file.filename,
+      req.body.topublickey,
+      tokenParams.publickey,
+      req.body.iv,
+      req.body.authHeader,
+      req.body.sharedText,
+    ],
     (err, result) => {
       if (err) {
         logger.error({ sqlError: err }, "Error inserting filename");
@@ -164,7 +169,7 @@ app.post("/addFile", authenticateToken, upload.single("file"), (req, res) => {
 app.get("/allfiles", authenticateToken, (req, res) => {
   const tokenParams = extractJwtClaims(getTokenFromAuthHeader(req.headers));
   con.query(
-    `SELECT filename from fileStorage WHERE topublickey = ?`,
+    `SELECT filename, frompublickey, iv, authTag, sharedText from fileStorage WHERE topublickey = ?`,
     [tokenParams.publickey],
     (err, rows) => {
       if (err) {
@@ -173,7 +178,13 @@ app.get("/allfiles", authenticateToken, (req, res) => {
       } else {
         let listOfFiles = [];
         for (let i = 0; i < rows.length; i++) {
-          listOfFiles.push(rows[i].filename);
+          listOfFiles.push({
+            filename: rows[i].filename,
+            publickey: rows[i].frompublickey,
+            iv: rows[i].iv,
+            authTag: rows[i].authTag,
+            sharedText: rows[i].sharedText,
+          });
         }
         res.json({ files: listOfFiles });
       }
@@ -188,38 +199,68 @@ app.get("/downloadFile/:filename", authenticateToken, (req, res) => {
   con.query(
     `SELECT filename from fileStorage WHERE topublickey = ? AND filename = ?`,
     [tokenParams.publickey, filename],
-    (err) => {
-      if (err) {
+    (err, rows) => {
+      if (err || rows.length == 0) {
         logger.error({ sqlError: err }, "Invalid download attempt");
         return res.status(400).json();
+      } else {
+        res.download(filePath, (err) => {
+          if (err) {
+            logger.error("Error downloading the file: ", err);
+            res.status(404).send("File not found");
+          }
+        });
       }
     }
   );
-  res.download(filePath, (err) => {
+});
+
+app.get("/getallusers", authenticateToken, async (req, res) => {
+  con.query(`SELECT username, publickey from users`, (err, rows) => {
     if (err) {
-      logger.error("Error downloading the file: ", err);
-      res.status(404).send("File not found");
+      logger.error({ sqlError: err }, "error retrieving filenames");
+      return res.status(400).json({ error: "No files found" });
+    } else {
+      let listOfUsers = [];
+      for (let i = 0; i < rows.length; i++) {
+        listOfUsers.push({
+          username: rows[i].username,
+          publickey: rows[i].publickey,
+        });
+      }
+      res.json({ users: listOfUsers });
     }
   });
 });
 
-app.get('/getallusers', authenticateToken, async (req,res) => {
+app.delete("/delete/:filename", authenticateToken, async (req, res) => {
+  const filename = req.params.filename;
+  const filePath = path.join(__dirname, "../uploads", filename);
+  const tokenParams = extractJwtClaims(getTokenFromAuthHeader(req.headers));
   con.query(
-    `SELECT username, publickey from users`,
+    `SELECT filename from fileStorage WHERE topublickey = ? AND filename = ?`,
+    [tokenParams.publickey, filename],
     (err, rows) => {
-      if (err) {
-        logger.error({ sqlError: err }, "error retrieving filenames");
-        return res.status(400).json({ error: "No files found" });
+      if (err || rows.length == 0) {
+        logger.error({ sqlError: err }, "Invalid delete attempt");
+        return res.status(400).json();
       } else {
-        let listOfUsers = [];
-        for (let i = 0; i < rows.length; i++) {
-          listOfUsers.push({username : rows[i].username, publickey : rows[i].publickey});
-        }
-        res.json({ users: listOfUsers });
+        unlink(filePath, (err) => {
+          if (err) throw err;
+          logger.info(`${filename} was deleted`);
+        });
       }
     }
   );
-})
+
+  con.query("DELETE FROM fileStorage WHERE filename=?", [filename], (err) => {
+    if (err) {
+      logger.error({ sqlError: err }, "Invalid download attempt");
+      return res.status(400).json();
+    }
+  });
+  res.send("File deleted");
+});
 
 const server = app.listen(port, hostname, () => {
   logger.info(`Server Listening on PORT: ${port}`);
