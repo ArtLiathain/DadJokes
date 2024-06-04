@@ -110,7 +110,6 @@
                     type="file"
                     id="myfile"
                     name="myfile"
-                    multiple
                   /><br /><br />
 <!--                  need to dynamically generate these -->
                   <label for="users">Choose a user:</label>
@@ -135,6 +134,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
     <script src="./aesGcm.js"></script>
     <script type="text/javascript">
+      import {deriveSharedKey} from "./sharedKey.js";
+
       const downloadFile = async (token, file) => {
         const response = await fetch(`/downloadfile/${file.filename}`, {
           method: "GET",
@@ -196,43 +197,74 @@
     // on upload form submit event
       $("#uploadForm").submit(async (event) => {
         event.preventDefault();
-        const token = sessionStorage.getItem(`token ${123456789}`);
-        const fileInput = document.getElementById("myfile");
-        const files = fileInput.files;
-        const formData = new FormData();
 
-        // Add file(s) to formData
-        for (let i = 0; i < files.length; i++) {
-          formData.append("myfile", files[i]);
+        // Get the token from session storage
+        const token = sessionStorage.getItem(`token ${123456789}`);
+
+        // Get the file input element and its files
+        const fileInput = document.getElementById("myfile");
+        const file = fileInput.files[0];
+
+        if (!file) {
+          // Handle error: No file selected
+          console.error("Please select a file to upload.");
+          return;
         }
 
-        let user = document.getElementById("users");
+        const filename = file.name;
 
-        // call encryptText on file:
-        const encryptedFile = encryptText(user, files);
+        // Create a new FormData object
+        const formData = new FormData();
 
-        formData.append("filename", encryptedFile.encrypted);
-        formData.append("iv", encryptedFile.iv);
-        formData.append("authHeader", encryptedFile.authTag);
-        formData.append("topublickey", user);
-        formData.append("sharedText", "sharedText");
+        // Get the user value from the input field
+        const user = document.getElementById("users").value;
 
         try {
+          // Read the file content
+          const reader = new FileReader();
+          const fileContent = await new Promise((resolve, reject) => {
+            reader.onload = (event) => resolve(event.target.result);
+            reader.onerror = (error) => reject(error);
+            reader.readAsArrayBuffer(file);
+          });
+
+          // Encrypt the file content (assuming encryptText handles ArrayBuffer)
+          // This token is wrong, need to get the correct one
+          let derivedKey = deriveSharedKey(user, token, "sharedText")
+          const encryptedFile = encryptText(derivedKey, fileContent);
+
+          formData.append("filename", filename);
+          formData.append("file", encryptedFile.encrypted);
+          formData.append("iv", encryptedFile.iv);
+          formData.append("authHeader", encryptedFile.authTag);
+          formData.append("topublickey", user);
+          formData.append("sharedText", "sharedText")
+        }catch{
+            console.error("Error:", error);
+            alert("Error uploading files");
+        }
+
+        try {
+          // Send the POST request with the FormData object
           const response = await fetch("/addFile", {
             method: "POST",
             headers: {
               Authorization: `Bearer ${token}`,
             },
-            body: formData,
+            body: formData, // FormData handles multipart form data encoding
           });
 
+          // Parse the response JSON
           const data = await response.json();
-          if (data.success) {
+
+          // Check for a successful response and alert the user accordingly
+          if (data.message === "File uploaded successfully") {
             alert("Files uploaded successfully");
           } else {
             alert("Error uploading files");
           }
         } catch (error) {
+          // Log any errors and alert the user
           console.error("Error:", error);
           alert("Error uploading files");
         }
