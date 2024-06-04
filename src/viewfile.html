@@ -128,6 +128,10 @@
     <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.bundle.min.js"></script>
     <script type="text/javascript">
+      const urlParams = new URLSearchParams(window.location.search);
+      const publickey = urlParams.get('publickey');
+      const token = sessionStorage.getItem(`token ${publickey}`);
+      console.log(publickey)
       const downloadFile = async (
         token,
         filename,

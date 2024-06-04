@@ -244,8 +244,8 @@
           body: JSON.stringify({ pass: password, publickey: publicKey.publickey }),
         });
         const data = await response.json();
-        sessionStorage.setItem(`token ${publicKey}`, data.token);
-        const redirectResponse = await fetch("/view", {
+        sessionStorage.setItem(`token ${publicKey.publickey}`, data.token);
+        const redirectResponse = await fetch(`/view?publickey=${publicKey.publickey}`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${data.token}`,
