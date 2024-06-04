@@ -9,10 +9,6 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
     />
-    <!--    link js-->
-    <script src="server.js"></script>
-    <script src="app.js"></script>
-    <script src="keyGen.js"></script>
     <link
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap"
       rel="stylesheet"
@@ -50,8 +46,11 @@
       <button  onclick="handleSignUp()">Sign Up</button>
         <a class="signup" onclick="handleToLogIn()">Log In</a>
     </form>
-    <script type="module">
-        import { keyStoreLevelDB } from './keyGen.js';
+    <!-- <script src="dist/bundle.js"></script> -->
+    <!-- <script src="keyGen.js"></script> -->
+    <!-- <script type="module"> -->
+    <script>
+        // import { keyStoreLevelDB } from './keyGen.js';
         const handleLogin = async () => {
         event.preventDefault();
         const password = document.getElementById("password").value;
@@ -85,13 +84,58 @@
         event.preventDefault();
         const password = document.getElementById("passwordSign").value;
         const username = document.getElementById("usernameSign").value;
-        // const publickey = 12345678910; 
+
+        // const publickey = 123456789; 
+        // const publicKey = await keyStoreLevelDB(username);
+        
+        const crypto = window.crypto.subtle;
+        const keys = await crypto.generateKey(
+            {
+                name: "ECDH",
+                namedCurve: "P-256", 
+            },
+            true,
+            ["deriveKey", "deriveBits"]
+        );
         console.log("Got here");
-        const publicKey = await keyStoreLevelDB(username);
+        
+        const publicKey = await crypto.exportKey("spki", keys.publicKey);
+        const privateKey = await crypto.exportKey("pkcs8", keys.privateKey);
+
+        function arrayBufferToBase64(buffer) {
+            let binary = '';
+            let bytes = new Uint8Array(buffer);
+            let len = bytes.byteLength;
+            for (let i = 0; i < len; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return window.btoa(binary);
+        }
+
+        const publicKeyBase64 = arrayBufferToBase64(publicKey);
+        const privateKeyBase64 = arrayBufferToBase64(privateKey);
+        console.log("Public Key (Base64): ", publicKeyBase64);  
+        console.log("Private Key (Base64): ", privateKeyBase64);
+
+        // const db = server.db;
+
+        try {
+            
+            await db.put(`${username} Public`, publicKey);
+            await db.put(`${publicKey} Private`, privateKey); //keys.getPrivateKey("base64")
+            console.log("Successfully put Keys");
+        } catch (error) {
+            console.log(error);
+        } finally {
+            if (db) {
+            await db.close();
+            console.log("Closed LevelDB");
+            }
+        }
+
         console.log(publicKey);
         // const publickey = await db.get(username);
-        // call function to generate key and add to levelDB 
-        // grab from levelDB
+
         const response = await fetch("/addUser", {
           method: "POST",
           headers: {
