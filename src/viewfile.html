@@ -145,7 +145,7 @@
               authTag,
               sharedText
       ) => {
-        const response = await fetch(`/downloadfile/${file.filename}`, {
+        const response = await fetch(`/downloadfile/${filename}`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -163,9 +163,6 @@
 
         // create a new blob with the decrypted text
         const decryptedBlob = new Blob([decryptedText], { type: "application/octet-stream" });
-
-        // create a new URL for the blob
-
 
         const url = window.URL.createObjectURL(decryptedBlob);
 
@@ -217,10 +214,9 @@
             },
           });
           const data = await response.json();
-          const users = data.users;
           const container = document.getElementById("users");
 
-          users.forEach((user) => {
+          data.forEach((user) => {
             const listItem = document.createElement("option");
             listItem.value = user.publickey;
             listItem.innerHTML = user.username;
