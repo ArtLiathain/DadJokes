@@ -240,16 +240,22 @@
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ pass: password, publickey: publicKey.publickey }),
+          body: JSON.stringify({
+            pass: password,
+            publickey: publicKey.publickey,
+          }),
         });
         const data = await response.json();
         sessionStorage.setItem(`token ${publicKey.publickey}`, data.token);
-        const redirectResponse = await fetch(`/view?publickey=${publicKey.publickey}`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${data.token}`,
-          },
-        });
+        const redirectResponse = await fetch(
+          `/view?publickey=${publicKey.publickey}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${data.token}`,
+            },
+          }
+        );
 
         if (redirectResponse.ok) {
           const html = await redirectResponse.text();
@@ -302,35 +308,6 @@
           privatekey: privateKeyBase64,
           user: username,
         });
-
-        console.log(publicKey);
-
-        const response = await fetch("/addUser", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            pass: password,
-            user: username,
-            publickey: publicKeyBase64,
-          }),
-        });
-
-        const data = await response.json();
-        sessionStorage.setItem(`token ${publicKeyBase64}`, data.token);
-        const redirectResponse = await fetch("/view", {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${data.token}`,
-          },
-        });
-
-        if (redirectResponse.ok) {
-          alert("User added successfully - Go to Login");
-        } else {
-          throw new Error("Failed to fetch the next page");
-        }
       };
       const handleToSignUp = async () => {
         document.getElementById("loginForm").classList.add("hidden");
