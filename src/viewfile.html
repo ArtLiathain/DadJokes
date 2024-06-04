@@ -194,6 +194,69 @@
           container.appendChild(listItem);
         });
       });
+
+
+      async function openOrCreatePubPrivateKeyDB() {
+        let db;
+
+        const openOrCreateDB = window.indexedDB.open("pub_privatekeys", 1);
+
+        openOrCreateDB.addEventListener("error", () => {
+          console.error("Error opening DB");
+        });
+
+        openOrCreateDB.addEventListener("success", () => {
+          console.log("Successfully opened DB");
+          db = openOrCreateDB.result;
+        });
+
+        openOrCreateDB.addEventListener("upgradeneeded", (event) => {
+          db = event.target.result;
+
+          if (!db.objectStoreNames.contains("pub_privatekeys")) {
+            const table = db.createObjectStore("pub_privatekeys", {
+              keyPath: "id",
+              autoIncrement: true,
+            });
+
+            table.createIndex("publickey", "publickey", { unique: true });
+            table.createIndex("privatekey", "privatekey", { unique: false });
+            table.createIndex("user", "user", { unique: true });
+          } else {
+            console.log("Table 'pub_privatekeys' already exists");
+          }
+        });
+
+        openOrCreateDB.addEventListener("error", () => {
+          console.error("Error loading database.");
+        });
+
+        // This line ensures the function doesn't return until the DB is opened
+        return new Promise((resolve, reject) => {
+          openOrCreateDB.onsuccess = () => resolve(db);
+          openOrCreateDB.onerror = (error) => reject(error);
+        });
+      }
+      const db = openOrCreatePubPrivateKeyDB();
+      async function retrieveUserPublicKeyFromDB(db, user) {
+        const transaction = db.transaction(["pub_privatekeys"], "readonly");
+        const objectStore = transaction.objectStore("pub_privatekeys");
+        const index = objectStore.index("user");
+        const request = index.get(user);
+        return new Promise((resolve, reject) => {
+          request.onsuccess = (event) => {
+            if (event.target.result) {
+              resolve(event.target.result); // Access and return the public key
+            } else {
+              resolve(null); // Resolve with null if user not found
+            }
+          };
+
+          request.onerror = (error) => {
+            reject(error); // Reject the promise with the error
+          };
+        });
+      }
     </script>
   </body>
 </html>
