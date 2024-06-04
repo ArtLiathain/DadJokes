@@ -16,7 +16,7 @@ import { rateLimit } from "express-rate-limit";
 import argon2 from "argon2";
 import { unlink } from "node:fs";
 
-const hostname = process.env.domain || "localhost";
+const hostname = process.env.domainname || "localhost";
 const port = 9022;
 const logger = pino();
 
@@ -52,6 +52,7 @@ con.connect(function (err) {
 
 const app = express();
 app.use(express.json());
+app.set('trust proxy', 1);
 app.use(limiter);
 
 const storage = multer.diskStorage({
