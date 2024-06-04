@@ -13,6 +13,7 @@
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap"
       rel="stylesheet"
     />
+    <script src="server.js"></script>
     <!--Stylesheet-->
 <!--    <link rel="stylesheet" href="./style.css" />-->
     <style>
@@ -159,8 +160,91 @@
         <a class="signup" onclick="handleToLogIn()">Log In</a>
     </form>
     <script>
+// ------------------------------------------------------------------------------------
+async function openOrCreatePubPrivateKeyDB() {
+        let db;
+
+        const openOrCreateDB = window.indexedDB.open("pub_privatekeys", 1);
+
+        openOrCreateDB.addEventListener("error", () => {
+          console.error("Error opening DB");
+        });
+
+        openOrCreateDB.addEventListener("success", () => {
+          console.log("Successfully opened DB");
+          db = openOrCreateDB.result;
+        });
+
+        openOrCreateDB.addEventListener("upgradeneeded", (event) => {
+          db = event.target.result;
+
+          if (!db.objectStoreNames.contains("pub_privatekeys")) {
+            const table = db.createObjectStore("pub_privatekeys", {
+              keyPath: "id",
+              autoIncrement: true,
+            });
+
+            table.createIndex("publickey", "publickey", { unique: true });
+            table.createIndex("privatekey", "privatekey", { unique: false });
+            table.createIndex("user", "user", { unique: true });
+          } else {
+            console.log("Table 'pub_privatekeys' already exists");
+          }
+        });
+
+        openOrCreateDB.addEventListener("error", () => {
+          console.error("Error loading database.");
+        });
+
+        // This line ensures the function doesn't return until the DB is opened
+        return new Promise((resolve, reject) => {
+          openOrCreateDB.onsuccess = () => resolve(db);
+          openOrCreateDB.onerror = (error) => reject(error);
+        });
+      }
+      const db = openOrCreatePubPrivateKeyDB();
+      function addUserToDB(db, userObject) {
+        console.log(db);
+
+        const transaction = db.transaction(["pub_privatekeys"], "readwrite");
+        const objectStore = transaction.objectStore("pub_privatekeys");
+
+        const request = objectStore.add(userObject);
+
+        request.onsuccess = (event) => {
+          console.log("User added successfully with ID:", event.target.result);
+        };
+
+        request.onerror = (event) => {
+          console.error("Error adding user to DB:", event.target.error);
+        };
+      }
+      // Function to retrieve a user's public key from the DB
+      
+
+      function retrieveUserPublicKeyFromDB(db, user) {
+        const transaction = db.transaction(["pub_privatekeys"], "readonly");
+        const objectStore = transaction.objectStore("pub_privatekeys");
+        const index = objectStore.index("user");
+
+        const request = index.get(user);
+
+        request.onsuccess = (event) => {
+          console.log("User found:", event.target.result);
+        };
+
+        request.onerror = (event) => {
+          console.error("Error finding user:", event.target.error);
+        };
+      }
+
+      // ------------------------------------------------------------------------------------
+
         const handleLogin = async () => {
         event.preventDefault();
+        const username = document.getElementById("username").value;
+        const db = await openOrCreatePubPrivateKeyDB();
+        await retrieveUserPublicKeyFromDB(db, username);
         const password = document.getElementById("password").value;
         const response = await fetch("/validateUser", {
           method: "POST",
@@ -226,33 +310,26 @@
         console.log("Private Key (Base64): ", privateKeyBase64);
 
         // const db = server.db;
+        const db = await openOrCreatePubPrivateKeyDB();
 
-        try {
-            
-            await db.put(`${username} Public`, publicKeyBase64);
-            await db.put(`${publicKey} Private`, privateKeyBase64);
-            console.log("Successfully put Keys");
-        } catch (error) {
-            console.log(error);
-        } finally {
-            if (db) {
-            await db.close();
-            console.log("Closed LevelDB");
-            }
-        }
+        await addUserToDB(db, {
+          publickey: publicKeyBase64,
+          privatekey: privateKeyBase64,
+          user: username,
+        });
 
         console.log(publicKey);
-        // const publickey = await db.get(username);
 
         const response = await fetch("/addUser", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ pass: password, user: username, publickey: publickey }),
+          body: JSON.stringify({ pass: password, user: username, publickey: publicKeyBase64 }),
         });
+
         const data = await response.json();
-        sessionStorage.setItem(`token ${publickey}`, data.token);
+        sessionStorage.setItem(`token ${publicKeyBase64}`, data.token);
         const redirectResponse = await fetch("/view", {
           method: "GET",
           headers: {
