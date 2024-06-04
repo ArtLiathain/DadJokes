@@ -112,12 +112,12 @@
                     id="myfile"
                     name="myfile"
                   /><br /><br />
-<!--                  need to dynamically generate these -->
+                  <!--                  need to dynamically generate these -->
                   <label for="users">Choose a user:</label>
                   <select name="users" id="users">
                     <option value="Template User">Template User</option>
                   </select>
-                  <br>
+                  <br />
                   <button
                     type="submit"
                     class="btn btn-outline-danger w-md waves-effect waves-light"
@@ -136,16 +136,16 @@
     <script src="./aesGcm.js"></script>
     <script type="text/javascript">
       const urlParams = new URLSearchParams(window.location.search);
-      const publickey = urlParams.get('publickey');
+      const publickey = urlParams.get("publickey");
       const token = sessionStorage.getItem(`token ${publickey}`);
 
       const downloadFile = async (
-              token,
-              filename,
-              publickey,
-              iv,
-              authTag,
-              sharedText
+        token,
+        filename,
+        publickey,
+        iv,
+        authTag,
+        sharedText
       ) => {
         const response = await fetch(`/downloadfile/${filename}`, {
           method: "GET",
@@ -154,7 +154,6 @@
           },
         });
         const blob = await response.blob();
-
 
         const url = window.URL.createObjectURL(blob);
 
@@ -179,9 +178,9 @@
       uploadForm.addEventListener("submit", (event) => {
         event.preventDefault();
         const files = uploadForm.querySelector("#myfile").files;
-        console.log(files)
+        console.log(files);
         const formData = new FormData();
-        formData.append("file", files[0])
+        formData.append("file", files[0]);
         formData.append("topublickey", 123456789);
         fetch("/addFile", {
           method: "POST",
@@ -196,7 +195,6 @@
       });
 
       document.addEventListener("DOMContentLoaded", async () => {
-        const token = sessionStorage.getItem(`token ${123456789}`);
         try {
           const response = await fetch("/getallusers", {
             method: "GET",
@@ -205,6 +203,7 @@
             },
           });
           const data = await response.json();
+          console.log(data)
           const container = document.getElementById("users");
 
           data.forEach((user) => {
@@ -213,13 +212,13 @@
             listItem.innerHTML = user.username;
             container.appendChild(listItem);
           });
-        }catch (error) {
+        } catch (error) {
           console.error("Error:", error);
           alert("Error getting users");
         }
       });
 
-    // on upload form submit event
+      // on upload form submit event
       $("#uploadForm").submit(async (event) => {
         event.preventDefault();
         const fileInput = document.getElementById("myfile");
@@ -230,38 +229,18 @@
           console.error("Please select a file to upload.");
           return;
         }
-
         const filename = file.name;
-
         // Create a new FormData object
         const formData = new FormData();
-
         // Get the user value from the input field
-        const user = document.getElementById("users").value;
-
         try {
-          // Read the file content
-          const reader = new FileReader();
-          const fileContent = await new Promise((resolve, reject) => {
-            reader.onload = (event) => resolve(event.target.result);
-            reader.onerror = (error) => reject(error);
-            reader.readAsArrayBuffer(file);
-          });
-
-          // Encrypt the file content (assuming encryptText handles ArrayBuffer)
           // This token is wrong, need to get the correct one
-          let derivedKey = deriveSharedKey(user, token, "sharedText")
-          const encryptedFile = encryptText(derivedKey, fileContent);
-
           formData.append("filename", filename);
-          formData.append("file", encryptedFile.encrypted);
-          formData.append("iv", encryptedFile.iv);
-          formData.append("authHeader", encryptedFile.authTag);
+          formData.append("file", file);
           formData.append("topublickey", user);
-          formData.append("sharedText", "sharedText")
-        }catch{
-            console.error("Error:", error);
-            alert("Error uploading files");
+        } catch {
+          console.error("Error:", error);
+          alert("Error uploading files");
         }
 
         try {
@@ -289,7 +268,6 @@
           alert("Error uploading files");
         }
       });
-
 
       document.addEventListener("DOMContentLoaded", async () => {
         // need to get each parameter on request
@@ -320,7 +298,6 @@
           container.appendChild(listItem);
         });
       });
-
 
       async function openOrCreatePubPrivateKeyDB() {
         let db;
