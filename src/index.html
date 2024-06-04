@@ -158,11 +158,7 @@
       <button  onclick="handleSignUp()">Sign Up</button>
         <a class="signup" onclick="handleToLogIn()">Log In</a>
     </form>
-    <!-- <script src="dist/bundle.js"></script> -->
-    <!-- <script src="keyGen.js"></script> -->
-    <!-- <script type="module"> -->
     <script>
-        // import { keyStoreLevelDB } from './keyGen.js';
         const handleLogin = async () => {
         event.preventDefault();
         const password = document.getElementById("password").value;
@@ -233,8 +229,8 @@
 
         try {
             
-            await db.put(`${username} Public`, publicKey);
-            await db.put(`${publicKey} Private`, privateKey); //keys.getPrivateKey("base64")
+            await db.put(`${username} Public`, publicKeyBase64);
+            await db.put(`${publicKey} Private`, privateKeyBase64);
             console.log("Successfully put Keys");
         } catch (error) {
             console.log(error);
