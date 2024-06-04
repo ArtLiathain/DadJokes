@@ -16,4 +16,3 @@ CREATE TABLE fileStorage (
     FOREIGN KEY (topublickey) REFERENCES users(publickey),
     FOREIGN KEY (frompublickey) REFERENCES users(publickey)
 ) ENGINE=InnoDB;
- 
