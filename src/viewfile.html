@@ -136,7 +136,14 @@
     <script type="text/javascript">
       import {deriveSharedKey} from "./sharedKey.js";
 
-      const downloadFile = async (token, file) => {
+      const downloadFile = async (
+              token,
+              filename,
+              publickey,
+              iv,
+              authTag,
+              sharedText
+      ) => {
         const response = await fetch(`/downloadfile/${file.filename}`, {
           method: "GET",
           headers: {
@@ -148,10 +155,10 @@
         // decryptText(derivedKey, ivBase64, encryptedText, authTagBase64);
 
         const decryptedText = decryptText(
-                file.publicKey,
-                file.iv,
+                publickey,
+                iv,
                 blob,
-                file.authTag);
+                authTag);
 
         // create a new blob with the decrypted text
         const decryptedBlob = new Blob([decryptedText], { type: "application/octet-stream" });
@@ -163,10 +170,19 @@
 
         const link = document.createElement("a");
         link.href = url;
-        link.setAttribute("download", file.filename);
+        link.setAttribute("download", filename);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+      };
+
+      const deleteFile = async (token, filename) => {
+        const response = await fetch(`/delete/${filename}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
       };
 
       document.addEventListener("DOMContentLoaded", async () => {
@@ -291,9 +307,10 @@
 
           listItem.innerHTML = `
                 <span>${file}</span>
-                <button onclick="downloadFile('${token}', '${file}')"class="btn btn-outline-primary" >
+                <button onclick="downloadFile('${token}', '${file.filename}', '${file.publickey}', '${file.iv}', '${file.authTag}', '${file.sharedText}')"class="btn btn-outline-primary" >
                     <i class="fa fa-download"></i> Download
                 </button>
+                <button onclick="deleteFile('${token}', '${file.filename}')">Delete File</button>
             `;
 
           container.appendChild(listItem);
