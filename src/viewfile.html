@@ -208,13 +208,14 @@
 
         let user = document.getElementById("users");
 
-        // Add other required fields to formData
+        // call encryptText on file:
+        const encryptedFile = encryptText(user, files);
 
-        // need to make these correct
+        formData.append("filename", encryptedFile.encrypted);
+        formData.append("iv", encryptedFile.iv);
+        formData.append("authHeader", encryptedFile.authTag);
         formData.append("topublickey", user);
-        formData.append("iv", "your_iv_value");
-        formData.append("authHeader", "your_authHeader_value");
-        formData.append("sharedText", "your_sharedText_value");
+        formData.append("sharedText", "sharedText");
 
         try {
           const response = await fetch("/addFile", {
