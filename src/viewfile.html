@@ -177,7 +177,6 @@
         const formData = new FormData();
         formData.append("file", files[0])
         formData.append("topublickey", 123456789);
-        formData.append("frompublickey", 123456789);
         fetch("/addFile", {
           method: "POST",
           headers: {
